@@ -36,7 +36,9 @@ let update model = function
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in
      ( { model with result }, Cmd.none )
-  | GotResults (Error e) -> ( { model with result = Error (Http.string_of_error e) }, Cmd.none )
+  | GotResults (Error e) ->
+     let result = Error (Http.string_of_error e) in
+     ( { model with result }, Cmd.none )
   | ShowRecord r ->
      let cmd = Router.openRoute (Record r.id) in
      let visitedRecords = Array.append model.visitedRecords [| r |] in
@@ -49,7 +51,9 @@ let recordItem visitedRecords r =
         true
       with Not_found -> false
     end in
-  div [ classList [ "visited", visited ] ] [ a [ onClick (ShowRecord r) ] [ text r.title ] ]
+  div [ classList [ "visited", visited ]
+    ] [ a [ onClick (ShowRecord r) ] [ text r.title ]
+    ]
 
 let resultList records model =
   let items = Array.map (recordItem model.visitedRecords) records |> Array.to_list in
@@ -57,7 +61,7 @@ let resultList records model =
 
 let view model =
   div
-    []
+    [ ]
     [ p [] [ text model.lookfor ]
      ;input' [ type' "text"
              ; name "lookfor"
@@ -68,7 +72,6 @@ let view model =
               ; onClick onSearch
               ; value "Search!"
          ] []
-     ; p [] [ text ("history: " ^ (String.concat " - " (Array.to_list (Array.map (fun r -> r.id) model.visitedRecords)))) ]
     ; match model.result with
       | NotAsked -> status "not asked"
       | Loading -> status "loading"
