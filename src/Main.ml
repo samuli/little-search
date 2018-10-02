@@ -3,6 +3,10 @@ open App
 open Tea.Html
 open Types
 
+
+let _ = Style.init
+
+
 type msg =
   | UrlChanged of Web.Location.location
   | SearchMsg of Search.msg
@@ -45,7 +49,7 @@ let update model = function
        
 let view model =
   div
-    []
+    [ ]
     [ p
         [ ]
         [ match model.route with
@@ -68,4 +72,5 @@ let main =
     view;
     subscriptions;
     shutdown = (fun _ -> Cmd.none)
-  }
+    }
+    

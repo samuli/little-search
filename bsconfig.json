@@ -8,7 +8,8 @@
   "suffix": ".bs.js",
     "bs-dependencies": [
         "@glennsl/bs-json",
-        "bucklescript-tea"
+        "bucklescript-tea",
+        "bs-css",
     ],
   "bsc-flags": [ "-bs-super-errors -no-alias-deps", "-color", "always", "-w", "-40+6+7+27+32..39+44+45", "-w @8"]
 }
