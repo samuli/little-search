@@ -51,7 +51,7 @@ let recordItem visitedRecords r =
         true
       with Not_found -> false
     end in
-  div [ classList [ "visited", visited ]
+  div [ class' (Style.recordListBkg)
     ] [ a [ onClick (ShowRecord r) ] [ text r.title ]
     ]
 
@@ -61,9 +61,9 @@ let resultList records model =
 
 let view model =
   div
-    [ ]
-    [ p [] [ text model.lookfor ]
-     ;input' [ type' "text"
+    [ class' Style.searchResults ]
+    [ input' [ class' Style.searchBox
+             ; type' "text"
              ; name "lookfor"
              ; value model.lookfor
              ; onInput (fun str -> (OnChange str))

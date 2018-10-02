@@ -49,16 +49,15 @@ let update model = function
        
 let view model =
   div
-    [ ]
+    [ class' Style.pad ]
     [ p
         [ ]
         [ match model.route with
           | Main ->
              div [] [ Search.view model.searchModel |> map searchMsg ]
           | Search _query -> 
-              div [] [
-                  a [ href (Router.routeToUrl Main)] [(text "main")]
-                ; Search.view model.searchModel |> map searchMsg
+              div [ ] [
+                Search.view model.searchModel |> map searchMsg
                 ]
           | Record _recordId ->
              Record.view model.recordModel |> map recordMsg

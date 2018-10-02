@@ -28,14 +28,14 @@ let update model = function
   |_ -> (model, Cmd.none)
 
 let viewRecord (r:Finna.record) =
-  div [] [
+  div [ ] [
       h1 [] [ text r.title ]
     ; p [] [ text r.id ]
     ]
   
 let view model =
   div
-    []
+    [ class' Style.recordFull ]
     [
       match model.record with
       | NotAsked -> status "rec not asked"
