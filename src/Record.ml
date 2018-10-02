@@ -38,9 +38,9 @@ let view model =
     [ class' Style.recordFull ]
     [
       match model.record with
-      | NotAsked -> status "rec not asked"
-      | Loading -> status "rec loading"
-      | Error e -> status ("rec error: " ^ e)
+      | NotAsked -> Html.noNode
+      | Loading -> statusLoading ()
+      | Error e -> statusError e
       | Success res ->
          let r = res.record in
          viewRecord r

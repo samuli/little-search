@@ -49,7 +49,7 @@ let update model = function
        
 let view model =
   div
-    [ class' Style.pad ]
+    [ ]
     [ p
         [ ]
         [ match model.route with

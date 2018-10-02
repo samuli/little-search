@@ -36,10 +36,18 @@ let init =
       borderColor (hex "d8d8d8");
       placeholder [ opacity 50.0 ]
     ]
-  
-let loader =
-  style [ padding basePadding; margin2 ~h: (px 0) ~v: basePadding ]
 
+let statusStyle ~error =
+  let bkgColor = if error then red else white in
+  style [
+      padding basePadding;
+      margin2 ~h: (px 0) ~v: basePadding;
+      backgroundColor bkgColor
+    ]
+
+let info = statusStyle ~error: false 
+let error = statusStyle ~error: true
+         
 let nextPage =
   style [
       textAlign `center;
@@ -54,11 +62,15 @@ let nextPage =
 
 let searchBox =
   style [
-    backgroundColor greyLight;
-    padding basePadding;
+    backgroundColor white;
     borderRadius (px 4)
     ]
 
+let searchBoxWrapper =
+  style [
+    padding basePadding;
+    sbackgroundColor greyLight
+    ]
     
 let facets =
   style [
@@ -83,18 +95,20 @@ let searchResultsInfo = style [ padding basePadding; fontWeight 800 ]
 
 let container = style []
 let pad = style [ padding basePadding ]
-let error = style [ padding basePadding; color red ]
 
-let recordList ~visited =
-  style [ 
-    borderBottom (px 1) solid greyLight;
+
+let recordList _~visited =
+  style [
+      borderBottom (px 1) solid greyLight;
     ]
 
-let recordListBkg =
+let recordListBkg ~visited =
   style [
-    padding2 ~v: (em 0.2) ~h: (em 1.0);
-    hover [ backgroundColor greyLighter];
-    cursor `pointer
+      borderBottom (px 1) solid greyLight;      
+      padding2 ~v: (em 0.5) ~h: (em 1.0);
+      backgroundColor (if visited then hex "eff8ff" else white);
+      hover [ backgroundColor greyLighter];
+      cursor `pointer
     ]
 
 let recordFormat =

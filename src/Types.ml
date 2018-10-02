@@ -12,7 +12,3 @@ type 't remoteData =
    | Loading
    | Error of string
    | Success of 't
-
-    
-
-

@@ -1,7 +1,5 @@
 open Types
    
-open Tea
-   
 type record = {
   id: string;
   title: string;
@@ -30,7 +28,7 @@ type recordResult = {
 let apiUrl = "https://api.finna.fi/api/v1"
 let limit = 30
 
-let getFieldQuery fields =
+let getFieldQuery _fields =
   List.map (fun f -> "&field[]=" ^ f) ["id"; "title"] |> String.concat ""
   
 let getSearchUrl ~lookfor =

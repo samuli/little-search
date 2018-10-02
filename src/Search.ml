@@ -51,30 +51,35 @@ let recordItem visitedRecords r =
         true
       with Not_found -> false
     end in
-  div [ class' (Style.recordListBkg)
-    ] [ a [ onClick (ShowRecord r) ] [ text r.title ]
+  a [ onClick (ShowRecord r)
+    ]
+    [ li [ class' (Style.recordListBkg ~visited) ]
+        [ text r.title ]
     ]
 
 let resultList records model =
   let items = Array.map (recordItem model.visitedRecords) records |> Array.to_list in
-  div [] items
+  ul [ class' Style.searchResults] items
 
 let view model =
   div
-    [ class' Style.searchResults ]
-    [ input' [ class' Style.searchBox
-             ; type' "text"
-             ; name "lookfor"
-             ; value model.lookfor
-             ; onInput (fun str -> (OnChange str))
-        ] []
+    [ ]
+    [ div [ class' Style.searchBoxWrapper ]
+        [ input'
+            [ class' Style.searchBox
+            ; type' "text"
+            ; name "lookfor"
+            ; value model.lookfor
+            ; onInput (fun str -> (OnChange str))
+            ] []
+        ]
      ; input' [ type' "submit"
               ; onClick onSearch
               ; value "Search!"
          ] []
     ; match model.result with
-      | NotAsked -> status "not asked"
-      | Loading -> status "loading"
-      | Error e -> status ("error: " ^ e)
+      | NotAsked -> Html.noNode
+      | Loading -> statusLoading ()
+      | Error e -> statusError e
       | Success res -> resultList res.records model
     ]
