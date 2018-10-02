@@ -69,7 +69,7 @@ let searchBox =
 let searchBoxWrapper =
   style [
     padding basePadding;
-    sbackgroundColor greyLight
+    backgroundColor greyLight
     ]
     
 let facets =
@@ -97,7 +97,7 @@ let container = style []
 let pad = style [ padding basePadding ]
 
 
-let recordList _~visited =
+let recordList ~_visited =
   style [
       borderBottom (px 1) solid greyLight;
     ]
