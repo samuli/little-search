@@ -16,6 +16,7 @@ type msg =
 
 type model = {
     lookfor: string;
+    lastSearch: string option;
     result: Finna.searchResult remoteData;
     visitedRecords: Finna.record array
   }
@@ -23,16 +24,26 @@ type model = {
 let init =
   {
     lookfor = "start";
+    lastSearch = None;
     result = NotAsked;
     visitedRecords = [||]
   }
 
 let update model = function
-  | OnSearch -> ( model, Router.openUrl (Router.routeToUrl (Search model.lookfor)))
+  | OnSearch ->
+     ( { model with lastSearch = None },
+       Router.openUrl (Router.routeToUrl (Search model.lookfor)))
   | Search ->
-     let url = Finna.getSearchUrl ~lookfor:model.lookfor in
-     let cmd =  Http.send gotResults (Http.getString url) in
-     ( { model with result = Loading }, cmd )
+     let newSearch =
+       match model.lastSearch with
+       | None -> true
+       | Some query -> not (query == model.lookfor) in
+     if newSearch then
+       let url = Finna.getSearchUrl ~lookfor:model.lookfor in
+       let cmd =  Http.send gotResults (Http.getString url) in
+       ( { model with result = Loading; lastSearch = Some model.lookfor }, cmd )
+     else
+       ( model, Cmd.none )
   | OnChange lookfor -> ( { model with lookfor } , (Cmd.none) )
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in

@@ -12,7 +12,7 @@ let routeToUrl = function
   | Record recordId -> Printf.sprintf "#/Record/%s" recordId
   | _ -> "#"
 
-let openUrl url = let _f = Js.log url in Tea.Navigation.newUrl url
+let openUrl url = Tea.Navigation.newUrl url
 
 let openRoute route =
   openUrl (routeToUrl route)
