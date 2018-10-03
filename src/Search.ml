@@ -20,7 +20,8 @@ type model = {
     visitedRecords: Finna.record array
   }
 
-let init = {
+let init =
+  {
     lookfor = "start";
     result = NotAsked;
     visitedRecords = [||]
@@ -64,19 +65,24 @@ let resultList records model =
 let view model =
   div
     [ ]
-    [ div [ class' Style.searchBoxWrapper ]
-        [ input'
-            [ class' Style.searchBox
-            ; type' "text"
-            ; name "lookfor"
-            ; value model.lookfor
-            ; onInput (fun str -> (OnChange str))
+    [ div [ class' Style.searchBoxWrapper  ]
+        [ form [ onCB "submit" "" (fun ev -> ev##preventDefault (); Some(OnSearch))
+            ]
+            [
+              input'
+                [ id "search-field"
+                ; class' Style.searchBox
+                ; type' "text"
+                ; name "lookfor"
+                ; value model.lookfor
+                ; onInput (fun str -> (OnChange str))
+                ] []
+            ]
+        ; input' [ type' "submit"
+                 ; onClick onSearch
+                 ; value "Search!"
             ] []
         ]
-     ; input' [ type' "submit"
-              ; onClick onSearch
-              ; value "Search!"
-         ] []
     ; match model.result with
       | NotAsked -> Html.noNode
       | Loading -> statusLoading ()
