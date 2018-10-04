@@ -37,6 +37,71 @@ let init =
       placeholder [ opacity 50.0 ]
     ]
 
+let loadingIndicator ~show =
+  let base =
+    [
+        position `absolute;
+        backgroundColor yellow;
+        padding (px 3)
+      ]
+  in
+                 
+  let display =
+    if show then
+      [ 
+        opacity 1.0;
+        transition ~delay: 500 ~duration: 100 "opacity"
+      ]
+    else
+      [ 
+        opacity 0.0;
+
+      ]
+  in
+  style (List.append base display)
+
+(* let loadingIndicator ~show =
+ *   let base = [
+ *       display `block;
+ *       width (`percent 100.0);
+ *       height (px 4);
+ *       margin (px 0);
+ *       backgroundColor (rgba 0 0 0 0.34)
+ *     ]
+ *   in
+ * 
+ *   let display =
+ *     if true then
+ *       [ 
+ *         opacity 1.0;
+ *         transition ~delay: 500 ~duration: 100 "opacity"
+ *       ]
+ *     else
+ *       [ 
+ *         opacity 0.0;
+ * 
+ *       ]
+ *   in
+ *   style base
+ *   style (List.append base display ) *)
+
+  
+(* let loadingBar =
+ *   let frames = keyframes [
+ *       (0, [ width (`percent 0.0) ] );
+ *       (60, [ width (`percent 100.0); marginLeft (`percent 50.0) ] );
+ *       (100, [ width (`percent 0.0); marginLeft (`percent 100.0) ] );
+ *     ] in
+ *   
+ *   style [
+ *       width (`percent 50.0);
+ *       height (`percent 100.0);
+ *       marginLeft (px 0);
+ *       backgroundColor (hex "43b02A");
+ *       animation ~duration: 750 ~timingFunction: `easeInOut ~direction: `alternateReverse ~iterationCount: `infinite frames
+ *     ] *)
+  
+      
 let statusStyle ~error =
   let bkgColor = if error then red else white in
   style [

@@ -12,12 +12,14 @@ type msg =
   | OnChange of string
   | GotResults of (string, string Http.error) Result.t
   | ShowRecord of Finna.record
+  | PageLoaded
 [@@bs.deriving {accessors}]
 
 type model = {
     lookfor: string;
     lastSearch: string option;
     result: Finna.searchResult remoteData;
+    nextResult: Finna.searchResult remoteData;
     visitedRecords: Finna.record array
   }
 
@@ -26,6 +28,7 @@ let init =
     lookfor = "start";
     lastSearch = None;
     result = NotAsked;
+    nextResult = NotAsked;
     visitedRecords = [||]
   }
 
@@ -41,20 +44,21 @@ let update model = function
      if newSearch then
        let url = Finna.getSearchUrl ~lookfor:model.lookfor in
        let cmd =  Http.send gotResults (Http.getString url) in
-       ( { model with result = Loading; lastSearch = Some model.lookfor }, cmd )
+       ( { model with nextResult = Loading; lastSearch = Some model.lookfor }, cmd )
      else
-       ( model, Cmd.none )
+       ( model, Cmd.msg pageLoaded )
   | OnChange lookfor -> ( { model with lookfor } , (Cmd.none) )
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in
-     ( { model with result }, Cmd.none )
+     ( { model with result; nextResult = NotAsked }, Cmd.msg pageLoaded )
   | GotResults (Error e) ->
      let result = Error (Http.string_of_error e) in
-     ( { model with result }, Cmd.none )
+     ( { model with result; nextResult = NotAsked }, Cmd.none )
   | ShowRecord r ->
      let cmd = Router.openRoute (Record r.id) in
      let visitedRecords = Array.append model.visitedRecords [| r |] in
      ( { model with visitedRecords }, cmd )
+  | _ -> ( model, Cmd.none )
                      
 let recordItem visitedRecords r =
   let visited =
@@ -96,7 +100,7 @@ let view model =
         ]
     ; match model.result with
       | NotAsked -> Html.noNode
-      | Loading -> statusLoading ()
       | Error e -> statusError e
+      | Loading -> statusLoading ()
       | Success res -> resultList res.records model
     ]

@@ -15,8 +15,10 @@ type msg =
 
 type model = {
     route: route;
+    page: page;
+    pageLoading: bool;
     searchModel: Search.model;
-    recordModel: Record.model
+    recordModel: Record.model;
 }
        
 let init () location =
@@ -24,19 +26,32 @@ let init () location =
   let cmd = Cmd.msg (urlChanged location) in
   ({ route;
      searchModel = Search.init;
-     recordModel = Record.init }
+     recordModel = Record.init;
+     page = route;
+     pageLoading = false
+   }
   , cmd)
 
 let subscriptions _model =
   Sub.none
-  
+
 let update model = function
   | SearchMsg subMsg ->
-     let (searchModel, cmd) = (Search.update model.searchModel subMsg) in
-     ( {model with searchModel}, (Cmd.map searchMsg cmd) )     
+     begin match subMsg with
+     | Search.PageLoaded -> 
+        ( { model with page = model.route; pageLoading = false }, Cmd.none )
+     | _ ->
+       let (searchModel, cmd) = (Search.update model.searchModel subMsg) in
+       ( {model with searchModel}, (Cmd.map searchMsg cmd) )
+     end
   | RecordMsg subMsg ->
-     let (recordModel, cmd) = (Record.update model.recordModel subMsg) in
-     ( {model with recordModel}, (Cmd.map recordMsg cmd) )     
+     begin match subMsg with
+     | Record.PageLoaded -> 
+        ( { model with page = model.route; pageLoading = false }, Cmd.none )
+     | _ ->
+       let (recordModel, cmd) = (Record.update model.recordModel subMsg) in
+       ( {model with recordModel}, (Cmd.map recordMsg cmd) )
+     end
   | UrlChanged location ->
      let route = Router.urlToRoute location in
      let cmd =
@@ -45,22 +60,28 @@ let update model = function
        | Search _query -> Cmd.map searchMsg (Cmd.msg Search.search)
        | Record id -> Cmd.map recordMsg (Cmd.msg (Record.showRecord id))
        end in
-     ( { model with route }, cmd )
+     ( { model with route; pageLoading = true }, cmd )
        
 let view model =
-  div
-    [ ]
-    [ p
+  div []
+    [
+      div [
+          class' (Style.loadingIndicator ~show: model.pageLoading)
+        ] [ text "Loading..." ]
+    ; div
         [ ]
-        [ match model.route with
-          | Main ->
-             div [] [ Search.view model.searchModel |> map searchMsg ]
-          | Search _query -> 
-              div [ ] [
-                Search.view model.searchModel |> map searchMsg
-                ]
-          | Record _recordId ->
-             Record.view model.recordModel |> map recordMsg
+        [ p
+            [ ]
+            [ match model.page with
+              | Main ->
+                 div [] [ Search.view model.searchModel |> map searchMsg ]
+              | Search _query -> 
+                 div [ ] [
+                     Search.view model.searchModel |> map searchMsg
+                   ]
+              | Record _recordId ->
+                 Record.view model.recordModel |> map recordMsg
+            ]
         ]
     ]
 

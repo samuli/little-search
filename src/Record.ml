@@ -10,21 +10,28 @@ type msg =
   | ShowRecord of string
   | GotResult of (string, string Http.error) Result.t
   | CloseRecord
+  | PageLoaded
 [@@bs.deriving {accessors}]
 
-type model = { record: Finna.recordResult remoteData  }
+type model = {
+    record: Finna.recordResult remoteData;
+    nextRecord: Finna.recordResult remoteData
+  }
 
-let init = { record = NotAsked }
+let init = {
+    record = NotAsked;
+    nextRecord = NotAsked
+  }
 
 let update model = function
   | ShowRecord id ->
      let url = Finna.getRecordUrl ~id in
      let cmd =  Http.send gotResult (Http.getString url) in
-     ( { record = Loading }, cmd )
+     ( { model with nextRecord = Loading }, cmd )
   | GotResult (Ok data) ->
      let record = Finna.decodeRecordResult data in
-     ( { record }, Cmd.none )
-  | GotResult (Error e) -> ( { record = Error (Http.string_of_error e) }, Cmd.none )
+     ( { model with record }, Cmd.msg pageLoaded )
+  | GotResult (Error e) -> ( { model with record = Error (Http.string_of_error e) }, Cmd.none )
   |_ -> (model, Cmd.none)
 
 let viewRecord (r:Finna.record) =
