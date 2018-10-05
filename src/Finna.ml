@@ -24,16 +24,15 @@ type recordResult = {
   resultCount: int
 }
 
-
 let apiUrl = "https://api.finna.fi/api/v1"
 let limit = 30
 
 let getFieldQuery _fields =
   List.map (fun f -> "&field[]=" ^ f) ["id"; "title"] |> String.concat ""
   
-let getSearchUrl ~lookfor =
+let getSearchUrl ~lookfor ~page =
   let fields = getFieldQuery ["id"; "title"] in
-  Printf.sprintf "%s/search?lookfor=%s%s&limit=%d" apiUrl lookfor fields limit
+  Printf.sprintf "%s/search?lookfor=%s%s&limit=%d&page=%d" apiUrl lookfor fields limit page
 
 let getRecordUrl ~id =
   let fields = getFieldQuery ["id"; "title"; "authors"] in
