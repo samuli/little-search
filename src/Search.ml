@@ -119,8 +119,8 @@ let view model =
   div
     [ ]
     [ div [ class' Style.searchBoxWrapper  ]
-        [ form [ onCB "submit" "" (fun ev -> ev##preventDefault (); Some(OnSearch))
-            ]
+        [ form
+            [ onCB "submit" "" (fun ev -> ev##preventDefault (); Some(OnSearch)) ]
             [
               input'
                 [ id "search-field"
@@ -129,21 +129,16 @@ let view model =
                 ; name "lookfor"
                 ; value model.lookfor
                 ; onInput (fun str -> (OnChange str))
-                ] []
+                ] []            
+            ; input'
+                [ type' "submit"
+                ; onClick onSearch
+                ; value "Search!"
+                ]
+                []
             ]
-        ; input' [ type' "submit"
-                 ; onClick onSearch
-                 ; value "Search!"
-            ] []
         ; div []
             (results model.results model) 
         ; a [ onClick SearchMore ] [ text "more" ]
-        
-    (* ; match model.result with
-     *   | NotAsked -> Html.noNode
-     *   | Error e -> statusError e
-     *   | Loading -> statusLoading ()
-     *   | Success res -> resultList res.records model
-     * ] *)
         ]
     ]
