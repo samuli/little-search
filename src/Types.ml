@@ -8,9 +8,12 @@ type route =
   | Record of recordId
 
 type 't remoteData =
-   | NotAsked
-   | Loading
-   | Error of string
-   | Success of 't
+  | NotAsked
+  | NotAskedType of 't
+  | Loading
+  | LoadingType of 't
+  | Error of string
+  | Success of 't
 
 type page = route
+

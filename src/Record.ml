@@ -45,10 +45,10 @@ let view model =
     [ class' Style.recordFull ]
     [
       match model.record with
-      | NotAsked -> Html.noNode
       | Loading -> statusLoading ()
       | Error e -> statusError e
       | Success res ->
          let r = res.record in
          viewRecord r
+      | _ -> Html.noNode
     ]

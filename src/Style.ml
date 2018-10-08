@@ -136,7 +136,16 @@ let searchBoxWrapper =
     padding basePadding;
     backgroundColor greyLight
     ]
-    
+
+let facetModal =
+  style [
+      position `fixed;
+      top (px 0);
+      width (`percent 100.0);
+      height (`percent 100.0);
+      backgroundColor green
+    ]
+  
 let facets =
   style [
     backgroundColor greyLighter;
@@ -145,8 +154,14 @@ let facets =
     ]
   
 let facetMenu = style [ padding2 ~h: (px 0) ~v: (em 0.2) ]
-
-                  
+let facetItem mode =
+  let col = match mode with
+    | "loaded" -> yellow
+    | "loading" -> red
+    | _ -> white 
+  in
+  style [ backgroundColor col ]
+  
 let facetLink =
   style [
     display `inlineBlock;
