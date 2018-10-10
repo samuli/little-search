@@ -34,7 +34,7 @@ type model = {
 
 let init =
   {
-    lookfor = "start";
+    lookfor = "";
     page = 1;
     limit = 30;
     filters = [||];
