@@ -16,7 +16,7 @@ type msg =
   | PageLoaded
   | OpenFacets
   | FacetMsg of Facet.msg
-  | GotFacets of (string, string Http.error) Result.t
+  | GotFacets of (string, string Http.error) Result.t                   
 [@@bs.deriving {accessors}]
 
 type model = {
@@ -69,7 +69,7 @@ let updateFacet ~facets ~key ~mode ~items =
   | Some (facet:Facet.facet) ->
      begin
        match facet.items with
-       | NotAskedType t | LoadingType t | Success t ->
+       | NotAskedType _t | LoadingType _t | Success _t ->
           let items = match mode with
             | "loading" -> LoadingType items
             | "success" -> Success items
@@ -123,19 +123,24 @@ let update model = function
   | PageLoaded -> ( model, Cmd.none )
   | OpenFacets -> ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets) )
   | FacetMsg subMsg ->
+     let (facetModel, subCmd) = (Facet.update model.facetModel subMsg) in
      begin
        match subMsg with
        | Facet.GetFacets facet ->
           let url = Finna.getFacetSearchUrl ~lookfor:model.lookfor ~page:model.page ~facet in
           let cmd = getHttpCmd gotFacets url in
           let facets = updateFacet ~facets:model.facetModel.facets ~key:facet ~mode:"loading" ~items:[||] in
-          ( { model with facetModel = { model.facetModel with facets} }, cmd )
-       | Facet.FacetResults filter ->
-          let filters = Array.append model.filters [| filter |] in
-          ( { model with filters; lastSearch = None }, Cmd.msg search )
+          ( { model with facetModel = { facetModel with facets} }, cmd )
+       | Facet.ToggleFacet (mode, filter) ->
+          let filters = 
+            if mode then
+              Array.append model.filters [| filter |]
+            else
+              List.filter (fun (f:Finna.filter) -> (f.value <> filter.value && f.key <> filter.key)) (Array.to_list model.filters) |> Array.of_list
+          in
+          ( { model with filters; facetModel; lastSearch = None }, Cmd.msg search )
        | _ ->
-          let (facetModel, cmd) = (Facet.update model.facetModel subMsg) in
-          ( {model with facetModel}, (Cmd.map facetMsg cmd) )
+          ( {model with facetModel}, (Cmd.map facetMsg subCmd) )
      end
   | GotFacets (Ok data) ->
      let facets = match Finna.decodeFacetResults data with
@@ -201,6 +206,6 @@ let view model =
         ; div []
             (results model.results model) 
         ; a [ onClick SearchMore ] [ text "more" ]
-        ; (Facet.view model.facetModel |> App.map facetMsg)
+        ; (Facet.view model.facetModel model.filters |> App.map facetMsg)
         ]
     ]

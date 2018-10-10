@@ -152,9 +152,15 @@ let facets =
     padding basePadding;
     borderBottom (px 1) solid greyLight
     ]
-  
+
 let facetMenu = style [ padding2 ~h: (px 0) ~v: (em 0.2) ]
-let facetItem mode =
+
+let facetItem active =
+  match active with
+    | true -> style [ border (px 2) `solid red ]
+    | false -> style []
+
+let facet mode =
   let col = match mode with
     | "loaded" -> yellow
     | "loading" -> red

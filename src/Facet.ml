@@ -6,7 +6,7 @@ type msg =
   | OpenFacets
   | CloseFacets
   | GetFacets of string
-  | FacetResults of Finna.filter
+  | ToggleFacet of (bool * Finna.filter)
 [@@bs.deriving {accessors}]
 
 type facet = {
@@ -38,30 +38,45 @@ let init = {
     facets = initFacets
   }
 
+(* TODO: close facets when clicked? *)
 let update model = function
   | OpenFacets -> ( { model with isOpen = true }, Cmd.none )
   | CloseFacets -> ( { model with isOpen = false }, Cmd.none )
   | GetFacets _x -> ( model, Cmd.none)
-  | FacetResults _x -> ( model, Cmd.none)
+  | ToggleFacet (_x,_y) -> ( { model with isOpen = false }, Cmd.none)
 
-let facetList facets =
-  let renderFacetItems key items =
-    Array.map (fun (item:Finna.facetItem) -> li [ onClick (FacetResults { key; value = item.value}) ] [ text item.label ] ) items
+let isFacetActive ~filters ~facetKey ~facetValue =
+  List.exists
+    (fun (f:Finna.filter) -> (facetKey = f.key && facetValue = f.value))
+    (Array.to_list filters)
+  
+let facetList ~facets ~filters =
+  let renderFacetItem ~key ~(item:Finna.facetItem) ~filters =
+    let isActive =
+      isFacetActive ~filters ~facetKey:key ~facetValue:item.value
+    in
+    li [
+        onClick (ToggleFacet ((not isActive), { key; value = item.value}))
+      ; class' (Style.facetItem isActive)
+      ]
+      [ text item.label ]
+  in  
+  let renderFacetItems ~key ~items ~filters =
+    Array.map (fun item -> renderFacetItem ~key ~item ~filters) items
   in
   let facet f =
-    let renderFacet key items css =
-      li [ class' (Style.facetItem css)
-         ; onClick (GetFacets key)
+    let renderFacet ~key ~items ~css ~filters =
+      li [ class' (Style.facet css)
         ]
         [
-          p [] [ text key]
-        ; ul [] (Array.to_list (renderFacetItems key items))
+          p [ onClick (GetFacets key) ] [ text key]
+        ; ul [] (Array.to_list (renderFacetItems ~key ~items ~filters))
         ]
     in
     match f.items with
-    | Success t -> renderFacet f.key t "loaded"
-    | NotAskedType t -> renderFacet f.key t "not-asked"
-    | LoadingType t -> renderFacet f.key t "loading"
+    | Success t -> renderFacet ~key:f.key ~items:t ~css:"loaded" ~filters
+    | NotAskedType t -> renderFacet ~key:f.key ~items:t ~css:"not-asked" ~filters
+    | LoadingType t -> renderFacet ~key:f.key ~items:t ~css:"loading" ~filters
     | _ -> noNode
   in
   ul [ ]
@@ -73,11 +88,11 @@ let facetList facets =
        ) ( Array.to_list keys )
     )
   
-let view model =
+let view model filters =
   if model.isOpen = false then noNode else
     div [ class' Style.facetModal ]
       [
         button [ onClick CloseFacets ] [ text "close" ]
       ; text "facet"
-      ; facetList model.facets
+      ; facetList ~facets:model.facets ~filters
       ]
