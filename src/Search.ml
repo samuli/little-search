@@ -20,12 +20,12 @@ type msg =
 [@@bs.deriving {accessors}]
 
 type model = {
+    results: Finna.searchResult remoteData;
     lookfor: string;
     page: int;
     limit: int;
     filters: Finna.filter array;
     lastSearch: string option;
-    results: Finna.searchResult remoteData list;
     nextResult: Finna.searchResult remoteData;
     visitedRecords: Finna.record array;
     facetsOpen: bool;
@@ -39,7 +39,7 @@ let init =
     limit = 30;
     filters = [||];
     lastSearch = None;
-    results = [ NotAsked ];
+    results = NotAsked;
     nextResult = NotAsked;
     visitedRecords = [||];
     facetsOpen = false;
@@ -54,9 +54,12 @@ let getSearchCmd ~lookfor ~page ~limit ~filters =
   getHttpCmd gotResults url
   
 let appendResults ~model ~newResults =
-  let allResults = match model.lastSearch with
-    | None -> [ newResults ]
-    | Some _query -> List.append model.results [ newResults ]
+  let allResults = match (model.results, newResults, model.lastSearch) with
+    | (NotAsked, _, _) | (_, _, None) -> newResults
+    | (Success result, Success newRes, _) ->
+       let records = (List.append (Array.to_list result.records) (Array.to_list newRes.records)) |> Array.of_list in
+       Success { result with records }
+    | (t, _, _) -> t 
   in
   { model with
     results = allResults;
@@ -109,7 +112,6 @@ let update model = function
   | OnChange lookfor -> ( { model with lookfor } , (Cmd.none) )
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in
-     Js.log(result);
      let model = appendResults ~model ~newResults: result in
      ( model, Cmd.msg pageLoaded )
   | GotResults (Error e) ->
@@ -155,7 +157,7 @@ let update model = function
      ( model, Cmd.none )
 
      
-let recordItem visitedRecords r =
+let renderResultItem visitedRecords r =
   let visited =
     begin try
         let _el =
@@ -169,32 +171,34 @@ let recordItem visitedRecords r =
         [ text r.title ]
     ]
 
-let resultList result model =
+let renderResults (result:Finna.searchResult) model =
+  let pages =
+    floor ((float_of_int result.resultCount) /. (float_of_int model.limit)) +. 0.5
+    |> int_of_float in
   let items =
-    Array.map (recordItem model.visitedRecords) result.records |> Array.to_list
+    Array.map (renderResultItem model.visitedRecords) result.records |> Array.to_list
   in
-  div [] [ 
+  div [] [
       p [ class' Style.searchResultsInfo ]
         [ text ("Results: " ^ (string_of_int result.resultCount)) ]
     ; ul [ class' Style.searchResults] items
-    ; a [ onClick SearchMore ] [ text "more" ]
+    ; (if model.page < pages then
+         a [ onClick SearchMore ] [ text "more" ]
+       else
+         noNode)
     ]
 
-let results resultLists model =
-  List.map (fun result ->
-    match result with
+let results resultList model =
+    match resultList with
       | Error e -> statusError e
       | Loading -> statusLoading ()
-      | Success res -> resultList res model
+      | Success res -> renderResults res model
       | _ -> Html.noNode
-    ) resultLists
 
 let hasResults results =
-  List.exists (fun res ->
-      match res with
+      match results with
       | Success _r -> true
       | _ -> false
-    ) results
   
 let view model =
   div
@@ -213,7 +217,6 @@ let view model =
                 ] []            
             ; input'
                 [ type' "submit"
-                ; onClick onSearch
                 ; value "Search!"
                 ]
                 []
@@ -224,7 +227,7 @@ let view model =
               )
             ]
         ; div []
-            (results model.results model) 
+            [ results model.results model ] 
         ; (Facet.view model.facetModel model.filters |> App.map facetMsg)
         ]
     ]
