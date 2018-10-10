@@ -165,10 +165,13 @@ let recordItem visitedRecords r =
         [ text r.title ]
     ]
 
-let resultList records model =
-  let items = Array.map (recordItem model.visitedRecords) records |> Array.to_list in
-  div [] [
-  ul [ class' Style.searchResults] items
+let resultList result model =
+  let items = Array.map (recordItem model.visitedRecords) result.records |> Array.to_list in
+  div [] [ 
+      p [ class' Style.searchResultsInfo ]
+        [ text ("Results: " ^ (string_of_int result.resultCount)) ]
+    ; ul [ class' Style.searchResults] items
+    ; a [ onClick SearchMore ] [ text "more" ]
     ]
 
 let results resultLists model =
@@ -176,10 +179,17 @@ let results resultLists model =
     match result with
       | Error e -> statusError e
       | Loading -> statusLoading ()
-      | Success res -> resultList res.records model
+      | Success res -> resultList res model
       | _ -> Html.noNode
     ) resultLists
 
+let hasResults results =
+  List.exists (fun res ->
+      match res with
+      | Success r -> true
+      | _ -> false
+    ) results
+  
 let view model =
   div
     [ ]
@@ -201,11 +211,14 @@ let view model =
                 ; value "Search!"
                 ]
                 []
-            ; a [ onClick OpenFacets ] [ text "facets" ]
+            ; ( if hasResults model.results = true then
+                a [ onClick OpenFacets ] [ text "facets" ]
+                else
+                  noNode
+              )
             ]
         ; div []
             (results model.results model) 
-        ; a [ onClick SearchMore ] [ text "more" ]
         ; (Facet.view model.facetModel model.filters |> App.map facetMsg)
         ]
     ]
