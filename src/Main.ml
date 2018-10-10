@@ -44,7 +44,9 @@ let update model = function
         let route = pageToRoute model.nextPage in
         ( { model with route; nextPage = Ready route }, Cmd.none )
      | _ ->
-       let (searchModel, cmd) = (Search.update model.searchModel subMsg) in
+        let (searchModel, cmd) =
+          Search.update model.searchModel subMsg
+        in
        ( {model with searchModel}, (Cmd.map searchMsg cmd) )
      end
   | RecordMsg subMsg ->
@@ -53,7 +55,9 @@ let update model = function
         let route = pageToRoute model.nextPage in
         ( { model with route; nextPage = Ready route }, Cmd.none )
      | _ ->
-       let (recordModel, cmd) = (Record.update model.recordModel subMsg) in
+        let (recordModel, cmd) =
+          (Record.update model.recordModel subMsg)
+        in
        ( {model with recordModel}, (Cmd.map recordMsg cmd) )
      end
   | UrlChanged location ->
@@ -62,9 +66,11 @@ let update model = function
        begin match route with
        | Main -> ((Ready Main), Cmd.none)
        | Search query ->
-          ((Loading (Search query)), Cmd.map searchMsg (Cmd.msg Search.search))
+          ((Loading (Search query)),
+           Cmd.map searchMsg (Cmd.msg Search.search))
        | Record id ->
-          ((Loading (Record id)), Cmd.map recordMsg (Cmd.msg (Record.showRecord id)))
+          ((Loading (Record id)),
+           Cmd.map recordMsg (Cmd.msg (Record.showRecord id)))
        end in
      ( { model with nextPage }, cmd )
        

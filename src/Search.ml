@@ -136,7 +136,10 @@ let update model = function
             if mode then
               Array.append model.filters [| filter |]
             else
-              List.filter (fun (f:Finna.filter) -> (f.value <> filter.value && f.key <> filter.key)) (Array.to_list model.filters) |> Array.of_list
+              List.filter (fun (f:Finna.filter) ->
+                  (f.value <> filter.value && f.key <> filter.key))
+                (Array.to_list model.filters)
+              |> Array.of_list
           in
           ( { model with filters; facetModel; lastSearch = None }, Cmd.msg search )
        | _ ->
@@ -155,7 +158,8 @@ let update model = function
 let recordItem visitedRecords r =
   let visited =
     begin try
-        let _el = List.find (fun el -> el.id = r.id) (Array.to_list visitedRecords) in
+        let _el =
+          List.find (fun el -> el.id = r.id) (Array.to_list visitedRecords) in
         true
       with Not_found -> false
     end in
@@ -166,7 +170,9 @@ let recordItem visitedRecords r =
     ]
 
 let resultList result model =
-  let items = Array.map (recordItem model.visitedRecords) result.records |> Array.to_list in
+  let items =
+    Array.map (recordItem model.visitedRecords) result.records |> Array.to_list
+  in
   div [] [ 
       p [ class' Style.searchResultsInfo ]
         [ text ("Results: " ^ (string_of_int result.resultCount)) ]
@@ -186,7 +192,7 @@ let results resultLists model =
 let hasResults results =
   List.exists (fun res ->
       match res with
-      | Success r -> true
+      | Success _r -> true
       | _ -> false
     ) results
   
