@@ -15,5 +15,7 @@ type 't remoteData =
   | Error of string
   | Success of 't
 
-type page = route
+type page =
+  | Ready of route
+  | Loading of route
 
