@@ -12,38 +12,57 @@ type msg =
 type facet = {
     key: string;
     type': Finna.facetType;
-    items: Finna.facetItem array remoteData
+    items: Finna.facetItem array remoteData;
+    lookfor: string;
   } 
             
 type model = {
     isOpen: bool;
+    lookfor: string;
     facets: facet Js.Dict.t;
+    filters: Finna.filter array
   }
 
-let initFacets =
+let initFacets ~lookfor ~filters =
   let keys = [ "format"; "building" ] in
   let facets = Js.Dict.empty() in
   List.iter (fun key ->
       let facet = {
           key;
           type' = Finna.FacetNormal;
-          items = NotAskedType [||]
+          items = NotAskedType [||];
+          lookfor
         } in
       Js.Dict.set facets key facet
     ) keys;
   facets
-        
+
 let init = {
     isOpen = false;
-    facets = initFacets
+    lookfor = "";
+    facets = initFacets "" [||];
+    filters = [||];
   }
 
-(* TODO: close facets when clicked? *)
-let update model = function
-  | OpenFacets -> ( { model with isOpen = true }, Cmd.none )
+let update ~model ~lookfor ~filters = function
+  | OpenFacets -> (
+    if lookfor = model.lookfor && filters = model.filters then
+      ( { model with isOpen = true }, Cmd.none)
+    else
+      let entries = Js.Dict.entries model.facets |> Array.to_list in
+      let opened =
+        List.filter (fun (_key, facet) ->
+            match facet.items with
+            | NotAskedType _f -> false
+            | _ -> true)
+          entries
+      in
+      let cmds = List.map (fun (key, _facet) -> Cmd.msg (getFacets key)) opened in
+      { model with lookfor; filters; isOpen = true }, Cmd.batch cmds )
   | CloseFacets -> ( { model with isOpen = false }, Cmd.none )
   | GetFacets _x -> ( model, Cmd.none)
-  | ToggleFacet (_x,_y) -> ( { model with isOpen = false }, Cmd.none)
+  | ToggleFacet (_, _ ) ->
+     ( { model with isOpen = false }, Cmd.none)
 
 let isFacetActive ~filters ~facetKey ~facetValue =
   List.exists
@@ -59,7 +78,7 @@ let facetList ~facets ~filters =
         onClick (ToggleFacet ((not isActive), { key; value = item.value}))
       ; class' (Style.facetItem isActive)
       ]
-      [ text item.label ]
+      [ text (item.label ^ (Printf.sprintf " (%d)" item.count)) ]
   in  
   let renderFacetItems ~key ~items ~filters =
     Array.map (fun item -> renderFacetItem ~key ~item ~filters) items

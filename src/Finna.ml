@@ -45,13 +45,18 @@ let apiUrl = "https://api.finna.fi/api/v1"
 let getFieldQuery _fields =
   List.map (fun f -> "&field[]=" ^ f) ["id"; "title"] |> String.concat ""
 
+let getFilterQuery ~filters =
+  (Array.map (fun filter -> Printf.sprintf "filter[]=%s:%s" filter.key filter.value ) filters) |> Array.to_list |> String.concat "&"
+  
 let getSearchUrl ~lookfor ~page ~limit ~filters =
   let fields = getFieldQuery ["id"; "title"] in
-  let filters = (Array.map (fun filter -> Printf.sprintf "filter[]=%s:%s" filter.key filter.value ) filters) |> Array.to_list |> String.concat "&" in
+  let filters = getFilterQuery ~filters in
+  (* (Array.map (fun filter -> Printf.sprintf "filter[]=%s:%s" filter.key filter.value ) filters) |> Array.to_list |> String.concat "&" in *)
   Printf.sprintf "%s/search?lookfor=%s%s&limit=%d&page=%d&%s" apiUrl lookfor fields limit page filters
 
-let getFacetSearchUrl ~lookfor ~page ~facet =
-  Printf.sprintf "%s/search?lookfor=%s&limit=0&page=%d&facet[]=%s" apiUrl lookfor page facet
+let getFacetSearchUrl ~lookfor ~page ~facet ~filters =
+  let filters = getFilterQuery ~filters in
+  Printf.sprintf "%s/search?lookfor=%s&limit=0&page=%d&facet[]=%s&%s" apiUrl lookfor page facet filters
   
 let getRecordUrl ~id =
   let fields = getFieldQuery ["id"; "title"; "authors"] in
