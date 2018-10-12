@@ -23,7 +23,7 @@ type model = {
     filters: Finna.filter array
   }
 
-let initFacets ~lookfor ~filters =
+let initFacets lookfor =
   let keys = [ "format"; "building" ] in
   let facets = Js.Dict.empty() in
   List.iter (fun key ->
@@ -40,7 +40,7 @@ let initFacets ~lookfor ~filters =
 let init = {
     isOpen = false;
     lookfor = "";
-    facets = initFacets "" [||];
+    facets = initFacets "";
     filters = [||];
   }
 

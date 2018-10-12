@@ -38,6 +38,12 @@ let viewRecord (r:Finna.record) =
   div [ ] [
       h1 [] [ text r.title ]
     ; p [] [ text r.id ]
+    ; match r.formats with
+      | Some formats ->
+         let formats = Array.map (fun (f:Finna.translated) -> f.translated) formats in
+         let formats = String.concat ", " (Array.to_list formats) in
+         p [] [ text formats ]
+      | None -> noNode
     ]
   
 let view model =

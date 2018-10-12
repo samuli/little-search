@@ -12,12 +12,19 @@ type facetItem = {
     label: string;
     count: int
   }
-           
+
+type translated = {
+  value: string;
+  translated: string
+  }
+                
 type record = {
   id: string;
   title: string;
-  (* formats: option(array(translated)),
-   * buildings: option(array(translated)),
+  formats: translated array option;
+  images: string array option;
+
+  (* buildings: option(array(translated)),
    * images: array(string),
    * authors: array(string),
    * publishers: option(array(string)),
@@ -43,7 +50,7 @@ type recordResult = {
 let apiUrl = "https://api.finna.fi/api/v1"
 
 let getFieldQuery _fields =
-  List.map (fun f -> "&field[]=" ^ f) ["id"; "title"] |> String.concat ""
+  List.map (fun f -> "&field[]=" ^ f) ["id"; "title"; "formats"; "images"] |> String.concat ""
 
 let getFilterQuery ~filters =
   (Array.map (fun filter -> Printf.sprintf "filter[]=%s:%s" filter.key filter.value ) filters) |> Array.to_list |> String.concat "&"
@@ -51,7 +58,6 @@ let getFilterQuery ~filters =
 let getSearchUrl ~lookfor ~page ~limit ~filters =
   let fields = getFieldQuery ["id"; "title"] in
   let filters = getFilterQuery ~filters in
-  (* (Array.map (fun filter -> Printf.sprintf "filter[]=%s:%s" filter.key filter.value ) filters) |> Array.to_list |> String.concat "&" in *)
   Printf.sprintf "%s/search?lookfor=%s%s&limit=%d&page=%d&%s" apiUrl lookfor fields limit page filters
 
 let getFacetSearchUrl ~lookfor ~page ~facet ~filters =
@@ -63,6 +69,13 @@ let getRecordUrl ~id =
   Printf.sprintf "%s/record?id=%s%s" apiUrl id fields
 
 (* Decoders *)
+let translatedDecoder =
+  let translated value translated = { value; translated } in
+  let open Tea.Json.Decoder in
+  map2 translated
+    (field "value" string)
+    (field "translated" string)
+      
 let facetDecoder =
   let facet value label count = { value; label; count } in
   let open Tea.Json.Decoder in
@@ -72,11 +85,14 @@ let facetDecoder =
     (field "count" int)
   
 let recordDecoder =
-  let record id title = { id; title } in
+  let record id title formats images = { id; title; formats; images } in
   let open Tea.Json.Decoder in
-  map2 record
+  map4 record
     (field "id" string)
     (field "title" string)
+    (field "formats" (maybe (array translatedDecoder)))
+    (field "images" (maybe (array string)))
+  
 
 let decodeSearchResults json =
   let results resultCount records =
