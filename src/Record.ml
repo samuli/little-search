@@ -14,8 +14,8 @@ type msg =
 [@@bs.deriving {accessors}]
 
 type model = {
-    record: Finna.recordResult remoteData;
-    nextRecord: Finna.recordResult remoteData
+    record: Finna.record remoteData;
+    nextRecord: Finna.record remoteData
   }
 
 let init = {
@@ -53,8 +53,6 @@ let view model =
       match model.record with
       | Loading -> statusLoading ()
       | Error e -> statusError e
-      | Success res ->
-         let r = res.record in
-         viewRecord r
+      | Success r -> viewRecord r
       | _ -> Html.noNode
     ]

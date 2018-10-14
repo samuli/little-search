@@ -9,7 +9,7 @@ type facetType = | FacetNormal | FacetBoolean
                  
 type facetItem = {
     value: string;
-    label: string;
+    translated: string;
     count: int
   }
 
@@ -22,7 +22,7 @@ type record = {
   id: string;
   title: string;
   formats: translated array option;
-  images: string array option;
+  (* images: string array option; *)
 
   (* buildings: option(array(translated)),
    * images: array(string),
@@ -33,20 +33,26 @@ type record = {
    * urls: option(array(onlineUrl)), *)
   }
 
+type searchResultRaw = {
+  records: record array option;
+  resultCount: int option;
+  status: string;    
+  }
+                     
 type searchResult = {
   records: record array;
-  resultCount: int
-}
+  resultCount: int;
+  }
 
+
+type facetResultRaw = {
+  facets: facetItem array Js.Dict.t option;
+  status: string;    
+  }
 type facetResult = {
-  facets: facetItem array Tea.Json.Decoder.ObjectDict.t;
+  facets: facetItem array Js.Dict.t option;
 }
                   
-type recordResult = {
-  record: record;
-  resultCount: int
-}
-
 let apiUrl = "https://api.finna.fi/api/v1"
 
 let getFieldQuery _fields =
@@ -69,73 +75,116 @@ let getRecordUrl ~id =
   Printf.sprintf "%s/record?id=%s%s" apiUrl id fields
 
 (* Decoders *)
-let translatedDecoder =
-  let translated value translated = { value; translated } in
-  let open Tea.Json.Decoder in
-  map2 translated
-    (field "value" string)
-    (field "translated" string)
-      
-let facetDecoder =
-  let facet value label count = { value; label; count } in
-  let open Tea.Json.Decoder in
-  map3 facet
-    (field "value" string)
-    (field "translated" string)
-    (field "count" int)
+let facetDecoder json : facetItem =
+  let open Json.Decode in
+  let labelDecoder =
+    either
+      (string |> map (fun s -> s))
+      (int |> map (fun i -> string_of_int i))
+  in
+  {
+    value = json |> field "value" labelDecoder;
+    translated = json |> field "translated" labelDecoder;
+    count = json |> field "count" int;
+  }
+
+let translatedDecoder json : translated =
+  let open Json.Decode in
+  {
+    value = json |> field "value" string;
+    translated = json |> field "translated" string;
+  }
+                   
+let recordDecoder json =
+  let open Json.Decode in
+  {
+    id = json |> field "id" string;
+    title = json |> field "title" string;
+    formats = json |> (optional (field "formats" (array translatedDecoder)));
+  }
   
-let recordDecoder =
-  let record id title formats images = { id; title; formats; images } in
-  let open Tea.Json.Decoder in
-  map4 record
-    (field "id" string)
-    (field "title" string)
-    (field "formats" (maybe (array translatedDecoder)))
-    (field "images" (maybe (array string)))
-  
+let decodeSearchResults json : searchResult remoteData =
+  let decode json =
+    let open Json.Decode in
+    {
+      records = json |> (optional (field "records"  (array recordDecoder)));
+      resultCount = json |> (optional (field "resultCount" int));
+      status = json |> field "status" string;
+    }
+  in
+  let process (results:searchResultRaw) =
+    match results.status with
+  | "OK" ->
+     let (resultCount, records) = match (results.resultCount, results.records) with
+       | (Some count, Some records) -> (count, records)
+       | (_,_) -> (0, [||])
+     in
+     Success {
+         records;
+         resultCount
+       }
+  | _ -> Error "json"
+  in
 
-let decodeSearchResults json =
-  let results resultCount records =
-    { resultCount; records}
-  in
-  let open Tea.Json.Decoder in
-  let resultDecoder = map2 results
-                        (field "resultCount" int)
-                        (field "records" (array recordDecoder))
+  json
+  |> Json.parseOrRaise
+  |> decode
+  |> process
 
+let decodeRecordResult json : record remoteData =
+  let decode json =
+    let open Json.Decode in
+    {
+      records = json |> (optional (field "records"  (array recordDecoder)));
+      resultCount = json |> (optional (field "resultCount" int));
+      status = json |> field "status" string;
+    }
   in
-  begin match (decodeString resultDecoder json) with
-  | Ok results -> Success results
-  | Error e -> Error e
-  end
+  let process (results:searchResultRaw) =
+    match results.status with
+    | "OK" ->
+       begin
+         match (results.resultCount, results.records) with
+         | (Some _count, Some records) -> Success records.(0)
+         | (_,_) -> Error "Record not found"
+       end
+    | _ -> Error "Error parsing result"
+  in
 
-let decodeFacetResults json =
-  let results facets =
-    {facets}
-  in
-  let open Tea.Json.Decoder in
-  let resultDecoder = map results
-                        (field "facets" (dict (array facetDecoder)))
+  json
+  |> Json.parseOrRaise
+  |> decode
+  |> process
 
+let decodeFacetResults json : (string * facetItem array) remoteData =
+  let decode json =
+    Js.log json;
+    let open Json.Decode in
+    {
+      facets = json |> (optional (field "facets" (dict (array facetDecoder))));
+      status = json |> field "status" string;
+    }
   in
-  begin match (decodeString resultDecoder json) with
-  | Ok results -> begin
-      let keyVals = ObjectDict.bindings results.facets in
-      Success (List.hd keyVals)
-    end
-  | Error e -> Error e
-  end
+  let extractFacet facets =
+    let keys = Js.Dict.keys facets |> Array.to_list in
+    let key = List.hd keys in
+    match (Js.Dict.get facets key) with
+    | Some items -> Success (key, items)
+    | _ -> Error "Facet error2"
+  in
+  let process results =
+    Js.log results;
+    match results.status with
+    | "OK" ->
+       begin
+         match results.facets with
+         | Some facets -> extractFacet facets
+         | _ -> Error "Facet error"
+       end
+    | _ -> Error "Facet error"
+  in
 
-let decodeRecordResult json =
-  let results resultCount records =
-    { resultCount; record = records.(0) }
-  in
-  let open Tea.Json.Decoder in
-  let resultDecoder = map2 results
-                        (field "resultCount" int)
-                        (field "records" (array recordDecoder))
-  in
-  begin match (decodeString resultDecoder json) with
-  | Ok results -> Success results
-  | Error e -> Error e
-  end
+  json
+  |> Json.parseOrRaise
+  |> decode
+  |> process

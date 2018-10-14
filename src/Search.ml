@@ -155,7 +155,9 @@ let update model = function
      let facets = match Finna.decodeFacetResults data with
        | Success (key, items) ->
           updateFacet ~facets:model.facetModel.facets ~key ~mode:"success" ~items
-       | _ -> model.facetModel.facets in
+       | Error _e -> model.facetModel.facets
+       | _ -> model.facetModel.facets
+     in
      ( { model with facetModel = { model.facetModel with facets} }, Cmd.none )
   | GotFacets (Error _e) ->
      ( model, Cmd.none )

@@ -78,7 +78,7 @@ let facetList ~facets ~filters =
         onClick (ToggleFacet ((not isActive), { key; value = item.value}))
       ; class' (Style.facetItem isActive)
       ]
-      [ text (item.label ^ (Printf.sprintf " (%d)" item.count)) ]
+      [ text (item.translated ^ (Printf.sprintf " (%d)" item.count)) ]
   in  
   let renderFacetItems ~key ~items ~filters =
     Array.map (fun item -> renderFacetItem ~key ~item ~filters) items
