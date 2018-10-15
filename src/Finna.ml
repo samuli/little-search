@@ -71,6 +71,7 @@ let getFacetSearchUrl ~lookfor ~page ~facet ~filters =
   Printf.sprintf "%s/search?lookfor=%s&limit=0&page=%d&facet[]=%s&%s" apiUrl lookfor page facet filters
   
 let getRecordUrl ~id =
+  let id = Js_global.encodeURIComponent id in
   let fields = getFieldQuery ["id"; "title"; "authors"] in
   Printf.sprintf "%s/record?id=%s%s" apiUrl id fields
 
