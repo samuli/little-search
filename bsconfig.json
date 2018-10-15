@@ -10,6 +10,7 @@
         "@glennsl/bs-json",
         "bucklescript-tea",
         "bs-css",
+        "bs-webapi"
     ],
   "bsc-flags": [ "-bs-super-errors -no-alias-deps", "-color", "always", "-w", "-40+6+7+27+32..39+44+45", "-w @8"]
 }

@@ -1,7 +1,5 @@
 open Types
-
 open View
-   
 open Tea
 open Tea.Html
 
@@ -18,7 +16,8 @@ type model = {
     nextRecord: Finna.record remoteData
   }
 
-let init = {
+let init =
+  {
     record = NotAsked;
     nextRecord = NotAsked
   }
@@ -38,12 +37,39 @@ let viewRecord (r:Finna.record) =
   div [ ] [
       h1 [] [ text r.title ]
     ; p [] [ text r.id ]
-    ; match r.formats with
+    ; (match r.formats with
       | Some formats ->
          let formats = Array.map (fun (f:Finna.translated) -> f.translated) formats in
          let formats = String.concat ", " (Array.to_list formats) in
          p [] [ text formats ]
-      | None -> noNode
+      | None -> noNode)
+    ; (match r.images with
+       | Some images when (Array.length images) = 0 -> noNode
+       | Some images ->
+          let item i path imgId =
+           let path = Finna.baseUrl ^ path in
+           li [] [
+               img [
+                   id imgId
+                 ;  (if i < 4 then src path else href path)
+                 ; class' "record-image"
+                 ] [] ]
+         in
+         let imgId i =
+           let id = Js.String.replace "." "" r.id in
+           let id = Js.String.replace ":" "" id in
+           id ^ "-" ^ (string_of_int i) in
+         let images =
+           Array.mapi (fun i path ->
+               let id = imgId i in
+               item i path id) images
+         in
+         let ids = Array.mapi (fun i _ -> imgId i) images in
+         Js.Global.setTimeout (fun () ->
+             View.registerInview (Array.to_list ids)) 100 |> ignore;
+
+         ul [] (Array.to_list images)
+      | None -> noNode)
     ]
   
 let view model =

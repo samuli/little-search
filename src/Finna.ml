@@ -22,10 +22,9 @@ type record = {
   id: string;
   title: string;
   formats: translated array option;
-  (* images: string array option; *)
+  images: string array option;
 
   (* buildings: option(array(translated)),
-   * images: array(string),
    * authors: array(string),
    * publishers: option(array(string)),
    * year: option(string),
@@ -52,8 +51,9 @@ type facetResultRaw = {
 type facetResult = {
   facets: facetItem array Js.Dict.t option;
 }
-                  
-let apiUrl = "https://api.finna.fi/api/v1"
+
+let baseUrl = "https://api.finna.fi"
+let apiUrl = baseUrl ^ "/api/v1"
 
 let getFieldQuery _fields =
   List.map (fun f -> "&field[]=" ^ f) ["id"; "title"; "formats"; "images"] |> String.concat ""
@@ -101,6 +101,7 @@ let recordDecoder json =
     id = json |> field "id" string;
     title = json |> field "title" string;
     formats = json |> (optional (field "formats" (array translatedDecoder)));
+    images = json |> (optional (field "images" (array string)));
   }
   
 let decodeSearchResults json : searchResult remoteData =

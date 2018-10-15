@@ -9,6 +9,7 @@ export default {
         file: './release/main.js',
         format: 'iife',
         name: 'starter'
+
     },
     plugins: [
         node_resolve({module: true, browser: true}),
@@ -19,7 +20,8 @@ export default {
                 // left-hand side can be an absolute path, a path
                 // relative to the current directory, or the name
                 // of a module in node_modules
-                //'node_modules/glamor/lib/index.js': [ 'css' ]
+                'node_modules/lodash/lodash.js': [ 'throttle' ],
+            //    'node_modules/in-view/src/index.js': [ 'inView' ]
             }
         }),
 
@@ -27,7 +29,7 @@ export default {
             'process.env.NODE_ENV': JSON.stringify( 'production' )
         }),
     ],
-
+//    external: ['inView'],
     watch: {
         clearScreen: false
     }
