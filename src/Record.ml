@@ -47,13 +47,12 @@ let viewRecord (r:Finna.record) =
        | Some images when (Array.length images) = 0 -> noNode
        | Some images ->
           let item i path imgId =
-           let path = Finna.baseUrl ^ path in
-           li [] [
-               img [
-                   id imgId
-                 ;  (if i < 4 then src path else href path)
-                 ; class' "record-image"
-                 ] [] ]
+            let path = Finna.baseUrl ^ path in
+            let attrs =
+              [ id imgId; class' "record-image" ] @
+                if i < 4 then [ src path; noProp ] else [ noProp; href path ]
+            in
+            li [] [ img attrs [] ]
           in
           (* hash record.id to get a working querySelector for inView.js *)
           let hash =
