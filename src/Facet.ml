@@ -107,7 +107,7 @@ let facetList ~facets ~filters =
        ) ( Array.to_list keys )
     )
   
-let view model filters =
+let view ~model ~filters =
   if model.isOpen = false then noNode else
     div [ class' Style.facetModal ]
       [

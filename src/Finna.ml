@@ -160,7 +160,6 @@ let decodeRecordResult json : record remoteData =
 
 let decodeFacetResults json : (string * facetItem array) remoteData =
   let decode json =
-    Js.log json;
     let open Json.Decode in
     {
       facets = json |> (optional (field "facets" (dict (array facetDecoder))));
@@ -175,7 +174,6 @@ let decodeFacetResults json : (string * facetItem array) remoteData =
     | _ -> Error "Facet error2"
   in
   let process results =
-    Js.log results;
     match results.status with
     | "OK" ->
        begin

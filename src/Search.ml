@@ -125,12 +125,16 @@ let update model = function
   | PageLoaded -> ( model, Cmd.none )
   | OpenFacets -> ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets) )
   | FacetMsg subMsg ->
-     let (facetModel, subCmd) = (Facet.update ~model:model.facetModel ~lookfor:model.lookfor ~filters:model.filters subMsg) in 
+     let lookfor = match model.lastSearch with
+       | Some search -> search
+            | _ -> model.lookfor
+     in          
+     let (facetModel, subCmd) = (Facet.update ~model:model.facetModel ~lookfor ~filters:model.filters subMsg) in 
      begin
        match subMsg with
        | Facet.GetFacets facet ->
           let filters = List.filter (fun f -> f.key <> facet) (Array.to_list model.filters) |> Array.of_list in
-          let url = Finna.getFacetSearchUrl ~lookfor:model.lookfor ~page:model.page ~facet ~filters in
+          let url = Finna.getFacetSearchUrl ~lookfor ~page:model.page ~facet ~filters in
           let cmd = getHttpCmd gotFacets url in
           let facets = updateFacet ~facets:model.facetModel.facets ~key:facet ~mode:"loading" ~items:[||] in
           ( { model with facetModel = { facetModel with facets} }, cmd )
@@ -202,9 +206,9 @@ let results resultList model =
       | _ -> Html.noNode
 
 let hasResults results =
-      match results with
-      | Success _r -> true
-      | _ -> false
+  match results with
+  | Success results when results.resultCount > 0 -> true
+  | _ -> false
   
 let view model =
   div
@@ -234,6 +238,6 @@ let view model =
             ]
         ; div []
             [ results model.results model ] 
-        ; (Facet.view model.facetModel model.filters |> App.map facetMsg)
+        ; (Facet.view ~model: model.facetModel ~filters:model.filters |> App.map facetMsg)
         ]
     ]
