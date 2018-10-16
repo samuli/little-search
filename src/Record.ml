@@ -54,12 +54,21 @@ let viewRecord (r:Finna.record) =
                  ;  (if i < 4 then src path else href path)
                  ; class' "record-image"
                  ] [] ]
-         in
-         let imgId i =
-           let id = Js.String.replace "." "" r.id in
-           let id = Js.String.replace ":" "" id in
-           id ^ "-" ^ (string_of_int i) in
-         let images =
+          in
+          (* hash record.id to get a working querySelector for inView.js *)
+          let hash =
+            [%raw {| 
+function(s) {
+   return s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);
+return a&a},0);
+             }|}]
+          in
+          let imgId i =
+            let id = hash r.id in
+            "img-" ^ id ^ "-" ^ (string_of_int i)
+          in
+          
+          let images =
            Array.mapi (fun i path ->
                let id = imgId i in
                item i path id) images
