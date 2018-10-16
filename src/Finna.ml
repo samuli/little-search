@@ -4,6 +4,11 @@ type filter = {
     key: string;
     value: string
   }
+            
+type onlineUrl = {
+  url: string option;
+  label: string option;
+}
 
 type facetType = | FacetNormal | FacetBoolean
                  
@@ -23,13 +28,12 @@ type record = {
   title: string;
   formats: translated array option;
   images: string array option;
-
-  (* buildings: option(array(translated)),
-   * authors: array(string),
-   * publishers: option(array(string)),
-   * year: option(string),
-   * onlineUrls: option(array(onlineUrl)),
-   * urls: option(array(onlineUrl)), *)
+  authors: string array option;
+  buildings: translated array option;
+  publishers: string array option;
+  year: string option;
+  onlineUrls: onlineUrl array option;
+  urls: onlineUrl array option;
   }
 
 type searchResultRaw = {
@@ -56,7 +60,8 @@ let baseUrl = "https://api.finna.fi"
 let apiUrl = baseUrl ^ "/api/v1"
 
 let getFieldQuery _fields =
-  List.map (fun f -> "&field[]=" ^ f) ["id"; "title"; "formats"; "images"] |> String.concat ""
+  let fields = ["id"; "title"; "formats"; "images"; "authors"; "buildings"; "publishers"; "year"; "urls"; "onlineUrls"] in
+  List.map (fun f -> "&field[]=" ^ f) fields |> String.concat ""
 
 let getFilterQuery ~filters =
   (Array.map (fun filter -> Printf.sprintf "filter[]=%s:%s" filter.key filter.value ) filters) |> Array.to_list |> String.concat "&"
@@ -76,6 +81,13 @@ let getRecordUrl ~id =
   Printf.sprintf "%s/record?id=%s%s" apiUrl id fields
 
 (* Decoders *)
+let urlDecoder json =
+  let open Json.Decode in
+  {
+    url = json |> optional (field "url" string);
+    label = json |> optional (field "label" string);
+  }
+
 let facetDecoder json : facetItem =
   let open Json.Decode in
   let labelDecoder =
@@ -102,7 +114,17 @@ let recordDecoder json =
     id = json |> field "id" string;
     title = json |> field "title" string;
     formats = json |> (optional (field "formats" (array translatedDecoder)));
+    buildings = json |> (optional (field "buildings" (array translatedDecoder)));
     images = json |> (optional (field "images" (array string)));
+    publishers = json |> (optional (field "publishers" (array string)));
+    year = json |> (optional (field "year" string));
+    authors =
+      json
+      |> [%bs.raw
+             {| (json) => { return(Object.keys(json.authors.primary)); } |}
+         ];
+    onlineUrls = json |> (optional (field "onlineUrls" (array urlDecoder)));
+    urls = json |> (optional (field "urls" (array urlDecoder)));
   }
   
 let decodeSearchResults json : searchResult remoteData =

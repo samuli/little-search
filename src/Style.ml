@@ -221,7 +221,7 @@ let recordImage =
     backgroundColor greyLight
     ]
 let recordAuthors = style [ fontWeight 400; marginRight (em 0.5) ]
-let recrodPublisher = style [ marginRight (em 0.3); fontSize (em 0.9) ]
+let recordPublisher = style [ marginRight (em 0.3); fontSize (em 0.9) ]
 let recordYear = style [ fontSize (em 0.9) ]
 let recordPublished = style [ marginRight (em 0.5) ]
 

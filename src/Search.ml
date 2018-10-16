@@ -178,7 +178,13 @@ let renderResultItem visitedRecords r =
   a [ onClick (ShowRecord r)
     ]
     [ li [ class' (Style.recordListBkg ~visited) ]
-        [ text r.title ]
+        [
+          Record.authors r.authors
+        ; h1 [] [ text r.title ]
+        ; Record.formats r.formats
+        ; Record.buildings r.buildings
+        ; Record.publishInfo r
+        ]
     ]
 
 let renderResults (result:Finna.searchResult) model =
