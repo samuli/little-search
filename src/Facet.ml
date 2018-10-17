@@ -6,7 +6,8 @@ type msg =
   | OpenFacets
   | CloseFacets
   | GetFacets of string
-  | ToggleFacet of (bool * Types.filterType)
+  | ToggleFacet of string
+  | ToggleFacetItem of (bool * Types.filterType)
 [@@bs.deriving {accessors}]
 
 type facet = {
@@ -14,6 +15,7 @@ type facet = {
     type': Finna.facetType;
     items: Finna.facetItem array remoteData;
     lookfor: string;
+    opened: bool;
   } 
             
 type model = {
@@ -31,7 +33,8 @@ let initFacets lookfor =
           key;
           type' = Finna.FacetNormal;
           items = NotAskedType [||];
-          lookfor
+          lookfor;
+          opened = false
         } in
       Js.Dict.set facets key facet
     ) keys;
@@ -52,17 +55,30 @@ let update ~model ~lookfor ~filters = function
       let entries = Js.Dict.entries model.facets |> Array.to_list in
       let opened =
         List.filter (fun (_key, facet) ->
-            match facet.items with
-            | NotAskedType _f -> false
-            | _ -> true)
+            match (facet, facet.items) with
+            | (_facet, NotAskedType _f) -> false
+            | (facet, _) when facet.opened = false -> false
+            | (_, _) -> true)
           entries
       in
       let cmds = List.map (fun (key, _facet) -> Cmd.msg (getFacets key)) opened in
       { model with lookfor; filters; isOpen = true }, Cmd.batch cmds )
   | CloseFacets -> ( { model with isOpen = false }, Cmd.none )
-  | GetFacets _x -> ( model, Cmd.none)
-  | ToggleFacet (_, _ ) ->
+  | ToggleFacet key ->
+     let facets = model.facets in
+     let (facets, cmd) = match Js.Dict.get facets key with
+       | Some (facet) ->
+          let opened = not facet.opened in
+          let facet = { facet with opened } in
+          let cmd = if opened && facet.items = (NotAskedType [||]) then Cmd.msg (getFacets key) else Cmd.none in
+          Js.Dict.set facets key facet;
+          (facets, cmd)
+       | _ -> (facets, Cmd.none)
+     in
+     ( { model with facets }, cmd)
+  | ToggleFacetItem (_,_) ->
      ( { model with isOpen = false }, Cmd.none)
+  | GetFacets _-> (model, Cmd.none)
 
 let isFacetActive ~filters ~facetKey ~facetValue =
   List.exists
@@ -75,7 +91,7 @@ let facetList ~facets ~filters =
       isFacetActive ~filters ~facetKey:key ~facetValue:item.value
     in
     li [
-        onClick (ToggleFacet ((not isActive), { key; value = item.value}))
+        onClick (ToggleFacetItem ((not isActive), { key; value = item.value}))
       ; class' (Style.facetItem isActive)
       ]
       [ text (item.translated ^ (Printf.sprintf " (%d)" item.count)) ]
@@ -84,18 +100,18 @@ let facetList ~facets ~filters =
     Array.map (fun item -> renderFacetItem ~key ~item ~filters) items
   in
   let facet f =
-    let renderFacet ~key ~items ~css ~filters =
+    let renderFacet ~opened ~key ~items ~css ~filters =
       li [ class' (Style.facet css)
         ]
         [
-          p [ onClick (GetFacets key) ] [ text key]
-        ; ul [] (Array.to_list (renderFacetItems ~key ~items ~filters))
+          p [ onClick (ToggleFacet key) ] [ text key]
+        ; (if opened then ul [] (Array.to_list (renderFacetItems ~key ~items ~filters)) else noNode)
         ]
     in
     match f.items with
-    | Success t -> renderFacet ~key:f.key ~items:t ~css:"loaded" ~filters
-    | NotAskedType t -> renderFacet ~key:f.key ~items:t ~css:"not-asked" ~filters
-    | LoadingType t -> renderFacet ~key:f.key ~items:t ~css:"loading" ~filters
+    | Success t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~css:"loaded" ~filters
+    | NotAskedType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~css:"not-asked" ~filters
+    | LoadingType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~css:"loading" ~filters
     | _ -> noNode
   in
   ul [ ]

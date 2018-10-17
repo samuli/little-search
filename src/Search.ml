@@ -91,8 +91,6 @@ let update model = function
      ( { model with lastSearch = None; searchParams },
        Router.openUrl (Router.routeToUrl (SearchRoute (model.searchParams.lookfor, []))))
   | Search (lookfor, _params) ->
-     Js.log "search:";
-     Js.log lookfor;
      let newSearch =
        match model.lastSearch with
        | None -> true
@@ -134,19 +132,17 @@ let update model = function
   | FacetMsg subMsg ->
      let lookfor = match model.lastSearch with
        | Some search -> search
-            | _ -> model.searchParams.lookfor
+       | _ -> model.searchParams.lookfor
      in          
      let (facetModel, subCmd) = (Facet.update ~model:model.facetModel ~lookfor ~filters:model.searchParams.filters subMsg) in 
      begin
        match subMsg with
        | Facet.GetFacets facet ->
-          (* let filters = Array.to_list model.searchParams.filters in
-           * let filters = List.filter (fun f -> f.key <> facet) filters |> Array.of_list in *)
           let url = Finna.getFacetSearchUrl ~facet ~params:model.searchParams in
           let cmd = getHttpCmd gotFacets url in
           let facets = updateFacet ~facets:model.facetModel.facets ~key:facet ~mode:"loading" ~items:[||] in
           ( { model with facetModel = { facetModel with facets} }, cmd )
-       | Facet.ToggleFacet (mode, filter) ->
+       | Facet.ToggleFacetItem (mode, filter) ->
           let filters = Array.to_list model.searchParams.filters in
           let filters = 
             if mode then
