@@ -81,7 +81,7 @@ let getFormats formats =
 let formats formats =
   match getFormats formats with
   | Some formats ->
-     p [] [ text formats ]
+     span [ class' Style.recordFormat ] [ text formats ]
   | None -> noNode
 
 let getBuildings buildings =
@@ -94,7 +94,7 @@ let getBuildings buildings =
 let buildings buildings =
   match getBuildings buildings with
   | Some buildings ->
-     p [] [ text buildings ]
+     span [ class' Style.facetLink ] [ text buildings ]
   | None -> noNode
 
 let getAuthors authors =
@@ -120,7 +120,7 @@ let getPublishInfo (r:Finna.record) =
 
 let publishInfo r =
   match getPublishInfo r with
-  | Some info -> p [ class' Style.recordPublisher ] [ text info ]
+  | Some info -> span [ class' Style.recordPublisher ] [ text info ]
   | _ -> noNode
 
 let urlList (r:Finna.record) =
@@ -137,16 +137,22 @@ let urlList (r:Finna.record) =
       | (Some label, Some url) -> li [ class' Style.recordLink ] [ a [ href url ] [ text label ] ]
       | (None, Some url) -> li [ class' Style.recordLink ] [ a [ href url ] [ text url ] ]
       | _ -> noNode) urls)
-       
+
+let finnaLink id =
+  p [] [ a [ href (Finna.getRecordLink id) ] [ text "View record in Finna" ] ]
+  
 let viewRecord (r:Finna.record) =
   div [ ] [
       h1 [] [ text r.title ]
     ; authors r.authors
     ; publishInfo r
-    ; buildings r.buildings
-    ; formats r.formats
+    ; div [] [
+          formats r.formats
+        ; buildings r.buildings
+        ]
     ; images r.id r.images
     ; urlList r
+    ; finnaLink r.id
     ]
   
 let view model =

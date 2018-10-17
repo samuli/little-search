@@ -59,6 +59,9 @@ type facetResult = {
 let baseUrl = "https://api.finna.fi"
 let apiUrl = baseUrl ^ "/api/v1"
 
+let getRecordLink id =
+  Printf.sprintf "https://finna.fi/Record/%s" id
+     
 let getFieldQuery _fields =
   let fields = ["id"; "title"; "formats"; "images"; "authors"; "buildings"; "publishers"; "year"; "urls"; "onlineUrls"] in
   List.map (fun f -> "&field[]=" ^ f) fields |> String.concat ""

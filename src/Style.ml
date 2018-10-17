@@ -113,17 +113,18 @@ let statusStyle ~error =
 let info = statusStyle ~error: false 
 let error = statusStyle ~error: true
          
-let nextPage =
-  style [
+let nextPage ~loading =
+  style ([
       textAlign `center;
       padding basePadding;
       margin basePadding;
       backgroundColor greyLight;
-      borderRadius (rem 0.5);
+      borderRadius (rem 0.5)] @
+    (if loading then [ 
       cursor `pointer;
       focus [ outlineStyle `none; borderColor blue ];
       hover [ backgroundColor (hex "cacdd0") ];
-    ]
+      ] else []))
 
 let searchBox =
   style [

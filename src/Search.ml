@@ -182,8 +182,8 @@ let renderResultItem visitedRecords r =
           Record.authors r.authors
         ; h1 [] [ text r.title ]
         ; Record.formats r.formats
-        ; Record.buildings r.buildings
         ; Record.publishInfo r
+        ; Record.buildings r.buildings
         ]
     ]
 
@@ -199,7 +199,15 @@ let renderResults (result:Finna.searchResult) model =
         [ text ("Results: " ^ (string_of_int result.resultCount)) ]
     ; ul [ class' Style.searchResults] items
     ; (if model.page < pages then
-         a [ onClick SearchMore ] [ text "more" ]
+         match model.nextResult with
+         | Loading ->
+            div
+              [ class' (Style.nextPage ~loading:false) ]
+              [ p [] [ text "Loading..."] ]
+         | _ ->
+            div
+              [ class' (Style.nextPage ~loading:true); onClick SearchMore ]
+              [ text "Load more" ]
        else
          noNode)
     ]
@@ -219,31 +227,35 @@ let hasResults results =
 let view model =
   div
     [ ]
-    [ div [ class' Style.searchBoxWrapper  ]
-        [ form
-            [ onCB "submit" "" (fun ev -> ev##preventDefault (); Some(OnSearch)) ]
-            [
-              input'
-                [ id "search-field"
-                ; class' Style.searchBox
-                ; type' "text"
-                ; name "lookfor"
-                ; value model.lookfor
-                ; onInput (fun str -> (OnChange str))
-                ] []            
-            ; input'
-                [ type' "submit"
-                ; value "Search!"
+    [ div []
+        [
+          div [ class' Style.searchBoxWrapper  ]
+            [ form
+                [ onCB "submit" "" (fun ev -> ev##preventDefault (); Some(OnSearch)) ]
+                [
+                  input'
+                    [ id "search-field"
+                    ; class' Style.searchBox
+                    ; type' "search"
+                    ; name "lookfor"
+                    ; value model.lookfor
+                    ; onInput (fun str -> (OnChange str))
+                    ] []            
+                ; input'
+                    [ type' "submit"
+                    ; value "Search!"
+                    ]
+                    []
+                ; ( if hasResults model.results = true then
+                      a [ onClick OpenFacets ] [ text "facets" ]
+                    else
+                      noNode
+                  )
                 ]
-                []
-            ; ( if hasResults model.results = true then
-                a [ onClick OpenFacets ] [ text "facets" ]
-                else
-                  noNode
-              )
             ]
-        ; div []
-            [ results model.results model ] 
-        ; (Facet.view ~model: model.facetModel ~filters:model.filters |> App.map facetMsg)
         ]
+    ; div []
+        [ results model.results model ] 
+    ; (Facet.view ~model: model.facetModel ~filters:model.filters |> App.map facetMsg)
     ]
+
