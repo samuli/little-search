@@ -23,3 +23,14 @@ type page =
   | Ready of route
   | Loading of route
 
+type filterType = {
+    key: string;
+    value: string
+  }
+
+type searchParamsType = {
+    lookfor: string;
+    limit: int;
+    page: int;
+    filters: filterType array;
+  }

@@ -6,7 +6,7 @@ type msg =
   | OpenFacets
   | CloseFacets
   | GetFacets of string
-  | ToggleFacet of (bool * Finna.filter)
+  | ToggleFacet of (bool * Types.filterType)
 [@@bs.deriving {accessors}]
 
 type facet = {
@@ -20,7 +20,7 @@ type model = {
     isOpen: bool;
     lookfor: string;
     facets: facet Js.Dict.t;
-    filters: Finna.filter array
+    filters: Types.filterType array
   }
 
 let initFacets lookfor =
@@ -66,7 +66,7 @@ let update ~model ~lookfor ~filters = function
 
 let isFacetActive ~filters ~facetKey ~facetValue =
   List.exists
-    (fun (f:Finna.filter) -> (facetKey = f.key && facetValue = f.value))
+    (fun (f:Types.filterType) -> (facetKey = f.key && facetValue = f.value))
     (Array.to_list filters)
   
 let facetList ~facets ~filters =

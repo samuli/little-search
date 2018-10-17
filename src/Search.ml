@@ -19,12 +19,10 @@ type msg =
   | GotFacets of (string, string Http.error) Result.t                   
 [@@bs.deriving {accessors}]
 
+                  
 type model = {
+    searchParams: Types.searchParamsType;
     results: Finna.searchResult remoteData;
-    lookfor: string;
-    page: int;
-    limit: int;
-    filters: Finna.filter array;
     lastSearch: string option;
     nextResult: Finna.searchResult remoteData;
     visitedRecords: Finna.record array;
@@ -34,10 +32,12 @@ type model = {
 
 let init =
   {
-    lookfor = "";
-    page = 1;
-    limit = 30;
-    filters = [||];
+    searchParams = {
+      lookfor = "";
+      page = 1;
+      limit = 30;
+      filters = [||];
+    };
     lastSearch = None;
     results = NotAsked;
     nextResult = NotAsked;
@@ -49,8 +49,8 @@ let init =
 let getHttpCmd callback url =
   Http.send callback (Http.getString url)
                
-let getSearchCmd ~lookfor ~page ~limit ~filters =
-  let url = Finna.getSearchUrl ~lookfor ~page ~limit ~filters in
+let getSearchCmd ~params =
+  let url = Finna.getSearchUrl params in
   getHttpCmd gotResults url
   
 let appendResults ~model ~newResults =
@@ -64,7 +64,7 @@ let appendResults ~model ~newResults =
   { model with
     results = allResults;
     nextResult = NotAsked;
-    lastSearch = Some model.lookfor
+    lastSearch = Some model.searchParams.lookfor
   }
 
 let updateFacet ~facets ~key ~mode ~items =
@@ -87,31 +87,36 @@ let updateFacet ~facets ~key ~mode ~items =
 
 let update model = function
   | OnSearch ->
-     ( { model with lastSearch = None; filters = [||] },
-       Router.openUrl (Router.routeToUrl (SearchRoute (model.lookfor, []))))
+     let searchParams = { model.searchParams with filters = [||] } in
+     ( { model with lastSearch = None; searchParams },
+       Router.openUrl (Router.routeToUrl (SearchRoute (model.searchParams.lookfor, []))))
   | Search (lookfor, _params) ->
      Js.log "search:";
      Js.log lookfor;
      let newSearch =
        match model.lastSearch with
        | None -> true
-       | Some query -> not (query == model.lookfor) in
+       | Some query -> not (query == model.searchParams.lookfor) in
      if newSearch then
+       let params = { model.searchParams with lookfor; page = 1 } in
        let cmd =
-         getSearchCmd ~lookfor ~page:1 ~limit:model.limit ~filters:model.filters in
-       ( { model with lookfor; nextResult = Loading }, cmd )
+         getSearchCmd ~params in
+       ( { model with searchParams = params; nextResult = Loading }, cmd )
      else
        ( model, Cmd.msg pageLoaded )
   | SearchMore ->
-     let page = model.page+1 in
+     let searchParams =
+       { model.searchParams with page = model.searchParams.page+1 } in
      let cmd =
-       getSearchCmd ~lookfor:model.lookfor ~page ~limit:model.limit ~filters:model.filters in
+       getSearchCmd ~params:searchParams in
      ( { model with
          nextResult = Loading;
-         lastSearch = Some model.lookfor;
-         page
+         lastSearch = Some model.searchParams.lookfor;
+         searchParams;
        }, cmd )
-  | OnChange lookfor -> ( { model with lookfor } , (Cmd.none) )
+  | OnChange lookfor ->
+     let searchParams = { model.searchParams with lookfor } in
+     ( { model with searchParams } , (Cmd.none) )
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in
      let model = appendResults ~model ~newResults: result in
@@ -129,31 +134,35 @@ let update model = function
   | FacetMsg subMsg ->
      let lookfor = match model.lastSearch with
        | Some search -> search
-            | _ -> model.lookfor
+            | _ -> model.searchParams.lookfor
      in          
-     let (facetModel, subCmd) = (Facet.update ~model:model.facetModel ~lookfor ~filters:model.filters subMsg) in 
+     let (facetModel, subCmd) = (Facet.update ~model:model.facetModel ~lookfor ~filters:model.searchParams.filters subMsg) in 
      begin
        match subMsg with
        | Facet.GetFacets facet ->
-          let filters = List.filter (fun f -> f.key <> facet) (Array.to_list model.filters) |> Array.of_list in
-          let url = Finna.getFacetSearchUrl ~lookfor ~page:model.page ~facet ~filters in
+          (* let filters = Array.to_list model.searchParams.filters in
+           * let filters = List.filter (fun f -> f.key <> facet) filters |> Array.of_list in *)
+          let url = Finna.getFacetSearchUrl ~facet ~params:model.searchParams in
           let cmd = getHttpCmd gotFacets url in
           let facets = updateFacet ~facets:model.facetModel.facets ~key:facet ~mode:"loading" ~items:[||] in
           ( { model with facetModel = { facetModel with facets} }, cmd )
        | Facet.ToggleFacet (mode, filter) ->
+          let filters = Array.to_list model.searchParams.filters in
           let filters = 
             if mode then
+              let filters = Array.to_list model.searchParams.filters in
               let filters =
-                List.filter (fun f -> f.key <> filter.key) (Array.to_list model.filters) |> Array.of_list
+                List.filter (fun f -> f.key <> filter.key) filters |> Array.of_list
               in
               Array.append filters [| filter |]
             else
-              List.filter (fun (f:Finna.filter) ->
+              List.filter (fun (f:filterType) ->
                   (f.value <> filter.value && f.key <> filter.key))
-                (Array.to_list model.filters)
+                filters
               |> Array.of_list
           in
-          ( { model with filters; facetModel; lastSearch = None }, Cmd.msg (search (model.lookfor, [])) )
+          let searchParams = { model.searchParams with filters } in
+          ( { model with searchParams; facetModel; lastSearch = None }, Cmd.msg (search (model.searchParams.lookfor, [])) )
        | _ ->
           ( {model with facetModel}, (Cmd.map facetMsg subCmd) )
      end
@@ -189,9 +198,11 @@ let renderResultItem visitedRecords r =
         ]
     ]
 
-let renderResults (result:Finna.searchResult) model =
+let renderResults (result:Finna.searchResult) (model:model) =
+  let page = model.searchParams.page in
+  let limit = model.searchParams.limit in
   let pages =
-    floor ((float_of_int result.resultCount) /. (float_of_int model.limit)) +. 0.5
+    floor ((float_of_int result.resultCount) /. (float_of_int limit)) +. 0.5
     |> int_of_float in
   let items =
     Array.map (renderResultItem model.visitedRecords) result.records |> Array.to_list
@@ -200,7 +211,7 @@ let renderResults (result:Finna.searchResult) model =
       p [ class' Style.searchResultsInfo ]
         [ text ("Results: " ^ (string_of_int result.resultCount)) ]
     ; ul [ class' Style.searchResults] items
-    ; (if model.page < pages then
+    ; (if page < pages then
          match model.nextResult with
          | Loading ->
             div
@@ -240,7 +251,7 @@ let view model =
                     ; class' Style.searchBox
                     ; type' "search"
                     ; name "lookfor"
-                    ; value model.lookfor
+                    ; value model.searchParams.lookfor
                     ; onInput (fun str -> (OnChange str))
                     ] []            
                 ; input'
@@ -258,6 +269,6 @@ let view model =
         ]
     ; div []
         [ results model.results model ] 
-    ; (Facet.view ~model: model.facetModel ~filters:model.filters |> App.map facetMsg)
+    ; (Facet.view ~model: model.facetModel ~filters:model.searchParams.filters |> App.map facetMsg)
     ]
 

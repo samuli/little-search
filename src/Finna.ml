@@ -1,9 +1,5 @@
 open Types
 
-type filter = {
-    key: string;
-    value: string
-  }
             
 type onlineUrl = {
   url: string option;
@@ -67,17 +63,17 @@ let getFieldQuery _fields =
   let fields = ["id"; "title"; "formats"; "images"; "authors"; "buildings"; "publishers"; "year"; "urls"; "onlineUrls"; "summary"] in
   List.map (fun f -> "&field[]=" ^ f) fields |> String.concat ""
 
-let getFilterQuery ~filters =
+let getFilterQuery filters =
   (Array.map (fun filter -> Printf.sprintf "filter[]=%s:%s" filter.key filter.value ) filters) |> Array.to_list |> String.concat "&"
   
-let getSearchUrl ~lookfor ~page ~limit ~filters =
+let getSearchUrl params =
   let fields = getFieldQuery ["id"; "title"] in
-  let filters = getFilterQuery ~filters in
-  Printf.sprintf "%s/search?lookfor=%s%s&limit=%d&page=%d&%s" apiUrl lookfor fields limit page filters
+  let filters = getFilterQuery params.filters in
+  Printf.sprintf "%s/search?lookfor=%s%s&limit=%d&page=%d&%s" apiUrl params.lookfor fields params.limit params.page filters
 
-let getFacetSearchUrl ~lookfor ~page ~facet ~filters =
-  let filters = getFilterQuery ~filters in
-  Printf.sprintf "%s/search?lookfor=%s&limit=0&page=%d&facet[]=%s&%s" apiUrl lookfor page facet filters
+let getFacetSearchUrl ~facet ~params =
+  let filters = getFilterQuery params.filters in
+  Printf.sprintf "%s/search?lookfor=%s&limit=0&page=%d&facet[]=%s&%s" apiUrl params.lookfor params.page facet filters
   
 let getRecordUrl ~id =
   let id = Js_global.encodeURIComponent id in
