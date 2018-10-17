@@ -8,7 +8,7 @@ open Tea.Html
 
 type msg =
   | OnSearch
-  | Search
+  | Search of Types.searchParams
   | SearchMore
   | OnChange of string
   | GotResults of (string, string Http.error) Result.t
@@ -88,16 +88,18 @@ let updateFacet ~facets ~key ~mode ~items =
 let update model = function
   | OnSearch ->
      ( { model with lastSearch = None; filters = [||] },
-       Router.openUrl (Router.routeToUrl (Search model.lookfor)))
-  | Search ->
+       Router.openUrl (Router.routeToUrl (SearchRoute (model.lookfor, []))))
+  | Search (lookfor, _params) ->
+     Js.log "search:";
+     Js.log lookfor;
      let newSearch =
        match model.lastSearch with
        | None -> true
        | Some query -> not (query == model.lookfor) in
      if newSearch then
        let cmd =
-         getSearchCmd ~lookfor:model.lookfor ~page:1 ~limit:model.limit ~filters:model.filters in
-       ( { model with nextResult = Loading }, cmd )
+         getSearchCmd ~lookfor ~page:1 ~limit:model.limit ~filters:model.filters in
+       ( { model with lookfor; nextResult = Loading }, cmd )
      else
        ( model, Cmd.msg pageLoaded )
   | SearchMore ->
@@ -119,7 +121,7 @@ let update model = function
      let model = appendResults ~model ~newResults: result in
      ( model, Cmd.none )
   | ShowRecord r ->
-     let cmd = Router.openRoute (Record r.id) in
+     let cmd = Router.openRoute (RecordRoute r.id) in
      let visitedRecords = Array.append model.visitedRecords [| r |] in
      ( { model with visitedRecords }, cmd )
   | PageLoaded -> ( model, Cmd.none )
@@ -151,7 +153,7 @@ let update model = function
                 (Array.to_list model.filters)
               |> Array.of_list
           in
-          ( { model with filters; facetModel; lastSearch = None }, Cmd.msg search )
+          ( { model with filters; facetModel; lastSearch = None }, Cmd.msg (search (model.lookfor, [])) )
        | _ ->
           ( {model with facetModel}, (Cmd.map facetMsg subCmd) )
      end

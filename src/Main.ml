@@ -63,13 +63,13 @@ let update model = function
   | UrlChanged location ->
      let route = Router.urlToRoute location in
      let (nextPage, cmd) =
-       begin match route with
-       | Main -> ((Ready Main), Cmd.none)
-       | Search query ->
-          ((Loading (Search query)),
-           Cmd.map searchMsg (Cmd.msg Search.search))
-       | Record id ->
-          ((Loading (Record id)),
+       begin match (route:Types.route) with
+       | MainRoute -> ((Ready MainRoute), Cmd.none)
+       | SearchRoute query ->
+          ((Loading (SearchRoute query)),
+           Cmd.map searchMsg (Cmd.msg (Search.search query)))
+       | RecordRoute id ->
+          ((Loading (RecordRoute id)),
            Cmd.map recordMsg (Cmd.msg (Record.showRecord id)))
        end in
      ( { model with nextPage }, cmd )
@@ -89,13 +89,13 @@ let view model =
         [ p
             [ ]
             [ match model.route with
-              | Main ->
+              | MainRoute ->
                  div [] [ Search.view model.searchModel |> map searchMsg ]
-              | Search _query -> 
+              | SearchRoute _query -> 
                  div [ ] [
                      Search.view model.searchModel |> map searchMsg
                    ]
-              | Record _recordId ->
+              | RecordRoute _recordId ->
                  Record.view model.recordModel |> map recordMsg
             ]
         ]

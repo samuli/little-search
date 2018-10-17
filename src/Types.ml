@@ -1,11 +1,15 @@
 
 type recordId = string
-type searchQuery = string
-                 
+              
+type searchLookfor = string
+type searchParam = (string * string)
+type searchParams = (searchLookfor * searchParam list)
+
+
 type route =
-  | Main
-  | Search of searchQuery
-  | Record of recordId
+  | MainRoute
+  | SearchRoute of searchParams
+  | RecordRoute of recordId
 
 type 't remoteData =
   | NotAsked
