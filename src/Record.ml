@@ -39,9 +39,9 @@ let images recId imgs =
    | Some images ->
       let item i path imgId =
         let path = Finna.baseUrl ^ path in
-        let css = (String.concat "," [Style.recordImage; "record-image"]) in
         let attrs =
-          [ id imgId; class' css ] @
+          [ id imgId; class' Style.recordImage ] @
+            (* load first images immediately and the rest with inView.js *)
             (if i < 4 then [ src path; noProp ] else [ noProp; href path ])
         in
         li [] [ img attrs [] ]
@@ -123,6 +123,18 @@ let publishInfo r =
   | Some info -> span [ class' Style.recordPublisher ] [ text info ]
   | _ -> noNode
 
+let getSummary summary =
+  match summary with
+  | Some summary when Array.length summary > 0 ->
+     Some (String.concat ". " (Array.to_list summary))
+  | _ -> None
+
+let summary summary =
+  match getSummary summary with
+  | Some summary ->
+     p [ class' Style.recordSummary ] [ text summary ]
+  | None -> noNode
+          
 let urlList (r:Finna.record) =
   let urls =
     (match r.urls with
@@ -144,6 +156,7 @@ let finnaLink id =
 let viewRecord (r:Finna.record) =
   div [ ] [
       h1 [] [ text r.title ]
+    ; summary r.summary
     ; authors r.authors
     ; publishInfo r
     ; div [] [

@@ -219,11 +219,11 @@ let recordImage =
   style [
     marginTop (em 0.5);
     minHeight (px 100);
-    backgroundColor greyLight
+    backgroundColor greyLight;
     ]
 let recordAuthors = style [ fontWeight 400; marginRight (em 0.5) ]
 let recordPublisher = style [ marginRight (em 0.3); fontSize (em 0.9) ]
 let recordYear = style [ fontSize (em 0.9) ]
 let recordPublished = style [ marginRight (em 0.5) ]
-
+let recordSummary = style [ fontStyle `italic ]
 
