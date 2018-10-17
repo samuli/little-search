@@ -20,7 +20,6 @@ let registerInview = fun ids ->
   let ids = String.concat "," ids in
   let i = inview ids in
   on i "enter" (fun el ->
-      Js.log "enter";
       match Webapi.Dom.Element.getAttribute "data-inview" el with
       | Some _val -> ()
       | _ ->
