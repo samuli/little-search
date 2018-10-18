@@ -8,7 +8,7 @@ open Tea.Html
 
 type msg =
   | OnSearch
-  | Search of Types.searchParams
+  | Search of (string * Types.searchParams)
   | SearchMore
   | OnChange of string
   | GotResults of (string, string Http.error) Result.t
@@ -87,15 +87,17 @@ let updateFacet ~facets ~key ~mode ~items =
 
 let update model = function
   | OnSearch ->
+     let params = (model.searchParams.lookfor, Array.to_list model.searchParams.filters) in
      ( { model with lastSearch = None },
-       Router.openUrl (Router.routeToUrl (SearchRoute (model.searchParams.lookfor, []))))
-  | Search (lookfor, _params) ->
+       Router.openUrl (Router.routeToUrl (SearchRoute params)))
+  | Search (lookfor, filters) ->
      let newSearch =
        match model.lastSearch with
        | None -> true
        | Some query -> not (query == model.searchParams.lookfor) in
      if newSearch then
-       let params = { model.searchParams with lookfor; page = 1 } in
+       let filters = Array.of_list filters in
+       let params = { model.searchParams with lookfor; filters; page = 1 } in
        let cmd =
          getSearchCmd ~params in
        ( { model with searchParams = params; nextResult = Loading }, cmd )
@@ -141,23 +143,28 @@ let update model = function
           let cmd = getHttpCmd gotFacets url in
           let facets = updateFacet ~facets:model.facetModel.facets ~key:facet ~mode:"loading" ~items:[||] in
           ( { model with facetModel = { facetModel with facets} }, cmd )
-       | Facet.ToggleFacetItem (mode, filter) ->
+       | Facet.ToggleFacetItem (mode, (filterKey, filterVal)) ->
           let filters = Array.to_list model.searchParams.filters in
           let filters = 
             if mode then
               let filters = Array.to_list model.searchParams.filters in
               let filters =
-                List.filter (fun f -> f.key <> filter.key) filters |> Array.of_list
+                List.filter (fun (key, _value) -> key <> filterKey) filters |> Array.of_list
               in
-              Array.append filters [| filter |]
+              Array.append filters [| (filterKey, filterVal) |]
             else
-              List.filter (fun (f:filterType) ->
-                  (f.value <> filter.value && f.key <> filter.key))
+              List.filter (fun (fKey, fVal) ->
+                  (fVal <> filterVal && fKey <> filterKey))
                 filters
               |> Array.of_list
           in
+
+          let cmd = Router.openUrl (Router.routeToUrl (SearchRoute (model.searchParams.lookfor, (Array.to_list filters)))) in
+
           let searchParams = { model.searchParams with filters } in
-          ( { model with searchParams; facetModel; lastSearch = None }, Cmd.msg (search (model.searchParams.lookfor, [])) )
+          (* let cmd = Cmd.msg (search (model.searchParams.lookfor, (Array.to_list filters))) in *)
+          let model = { model with searchParams; facetModel; lastSearch = None; nextResult = Loading } in
+          ( model, cmd )
        | _ ->
           ( {model with facetModel}, (Cmd.map facetMsg subCmd) )
      end

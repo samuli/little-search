@@ -7,7 +7,7 @@ type msg =
   | CloseFacets
   | GetFacets of string
   | ToggleFacet of string
-  | ToggleFacetItem of (bool * Types.filterType)
+  | ToggleFacetItem of (bool * searchParam)
 [@@bs.deriving {accessors}]
 
 type facet = {
@@ -22,7 +22,7 @@ type model = {
     isOpen: bool;
     lookfor: string;
     facets: facet Js.Dict.t;
-    filters: Types.filterType array
+    filters: Types.searchParam array
   }
 
 let initFacets lookfor =
@@ -82,7 +82,7 @@ let update ~model ~lookfor ~filters = function
 
 let isFacetActive ~filters ~facetKey ~facetValue =
   List.exists
-    (fun (f:Types.filterType) -> (facetKey = f.key && facetValue = f.value))
+    (fun (key, value) -> (facetKey = key && facetValue = value))
     (Array.to_list filters)
   
 let facetList ~facets ~filters =
@@ -91,7 +91,7 @@ let facetList ~facets ~filters =
       isFacetActive ~filters ~facetKey:key ~facetValue:item.value
     in
     li [
-        onClick (ToggleFacetItem ((not isActive), { key; value = item.value}))
+        onClick (ToggleFacetItem ((not isActive), ( key, item.value )))
       ; class' (Style.facetItem isActive)
       ]
       [ text (item.translated ^ (Printf.sprintf " (%d)" item.count)) ]

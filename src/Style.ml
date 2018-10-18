@@ -50,7 +50,7 @@ let loadingIndicator ~show =
     if show then
       [ 
         opacity 1.0;
-        transition ~delay: 500 ~duration: 100 "opacity"
+        (* transition ~delay: 500 ~duration: 100 "opacity" *)
       ]
     else
       [ 

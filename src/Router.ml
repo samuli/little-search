@@ -1,32 +1,33 @@
 open Types
    
 let urlToRoute location : Types.route =
-  let route = Js.String.split "/" location.Web.Location.hash in
+  let route = Js.String.split "?" location.Web.Location.hash in
+  Js.log route;
   match route with
-  | [|"#"; "Search"; query|] ->
-     let query = Js.String.substr ~from:1 query in
+  | [| "#/Search/"; query |] ->
      let params = Js.String.split "&" query |> Array.to_list in
-
      let params = List.map (fun param ->
                       match Js.String.split "=" param with
                       | [| key; value |] -> (key, value)
-                      | _ -> ("", "")) params in
-
-     let (_, lookfor) =
-       match List.find (fun (key, _value) -> key = "lookfor") params with
-       | param -> param
-       | exception Not_found -> ("","")
-     in
-     
-     (* let lookfor = Js.String.split "=" (List.hd params) in
-      * let params = List.tl params in *)
-     SearchRoute (lookfor, [])
-  | [|"#"; "Record"; recordId|] -> RecordRoute recordId
+                      | _ -> (param, "")) params in
+     let (lookfor, filters) = Util.extractSearchParams params in
+     SearchRoute (lookfor, filters)
+  | [|"#/Record/"; recordId|] -> RecordRoute recordId
   | _ -> MainRoute
 
 let routeToUrl = function
-  | SearchRoute (lookfor, _params) -> Printf.sprintf "#/Search/?lookfor=%s" lookfor
-  | RecordRoute recordId -> Printf.sprintf "#/Record/%s" recordId
+  | SearchRoute (lookfor, filters) ->
+     let filters =
+       if List.length filters > 0 then
+         let filters =
+           List.map (fun (key,value) ->
+               Printf.sprintf "filter[]=%s:%s" key value) filters in
+         "&" ^ (String.concat "&" filters)
+       else
+         ""
+     in
+     Printf.sprintf "#/Search/?lookfor=%s%s" lookfor filters
+  | RecordRoute recordId -> Printf.sprintf "#/Record/?%s" recordId
   | _ -> "#"
 
 let openUrl url = Tea.Navigation.newUrl url
