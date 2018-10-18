@@ -87,8 +87,7 @@ let updateFacet ~facets ~key ~mode ~items =
 
 let update model = function
   | OnSearch ->
-     let searchParams = { model.searchParams with filters = [||] } in
-     ( { model with lastSearch = None; searchParams },
+     ( { model with lastSearch = None },
        Router.openUrl (Router.routeToUrl (SearchRoute (model.searchParams.lookfor, []))))
   | Search (lookfor, _params) ->
      let newSearch =
