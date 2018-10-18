@@ -139,7 +139,13 @@ let update model = function
      begin
        match subMsg with
        | Facet.GetFacets facet ->
-          let url = Finna.getFacetSearchUrl ~facet ~params:model.searchParams in
+          let filters =
+            List.filter (fun (key, _value)
+                         -> facet <> key) (Array.to_list model.searchParams.filters)
+          in
+          let filters = Array.of_list filters in
+          let params = { model.searchParams with filters } in
+          let url = Finna.getFacetSearchUrl ~facet ~params in
           let cmd = getHttpCmd gotFacets url in
           let facets = updateFacet ~facets:model.facetModel.facets ~key:facet ~mode:"loading" ~items:[||] in
           ( { model with facetModel = { facetModel with facets} }, cmd )

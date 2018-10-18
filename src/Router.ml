@@ -2,7 +2,6 @@ open Types
    
 let urlToRoute location : Types.route =
   let route = Js.String.split "?" location.Web.Location.hash in
-  Js.log route;
   match route with
   | [| "#/Search/"; query |] ->
      let params = Js.String.split "&" query |> Array.to_list in
