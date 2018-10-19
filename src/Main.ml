@@ -3,9 +3,7 @@ open App
 open Tea.Html
 open Types
 
-
 let _ = Style.init
-
 
 type msg =
   | UrlChanged of Web.Location.location

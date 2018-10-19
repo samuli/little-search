@@ -30,7 +30,8 @@ let update model = function
   | GotResult (Ok data) ->
      let record = Finna.decodeRecordResult data in
      ( { model with record }, Cmd.msg pageLoaded )
-  | GotResult (Error e) -> ( { model with record = Error (Http.string_of_error e) }, Cmd.none )
+  | GotResult (Error e) ->
+     ( { model with record = Error (Http.string_of_error e) }, Cmd.msg pageLoaded )
   |_ -> (model, Cmd.none)
 
 let images recId imgs =

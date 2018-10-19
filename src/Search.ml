@@ -123,7 +123,7 @@ let update model = function
   | GotResults (Error e) ->
      let result = Error (Http.string_of_error e) in
      let model = appendResults ~model ~newResults: result in
-     ( model, Cmd.none )
+     ( model, Cmd.msg pageLoaded )
   | ShowRecord r ->
      let cmd = Router.openRoute (RecordRoute r.id) in
      let visitedRecords = Array.append model.visitedRecords [| r |] in
