@@ -12,4 +12,19 @@ let extractSearchParams params =
                     | _ -> (value, "")) filters
   in
   (lookfor, filters)
-       
+
+
+(* let storageKey = "little-search"
+ *                  
+ * let saveSession data =
+ *   let open Dom.Storage in
+ *   let ls = localStorage in
+ *   setItem storageKey data ls
+ * 
+ * let restoreSession =
+ *   let open Dom.Storage in
+ *   let ls = localStorage in
+ *   match getItem storageKey ls with
+ *     | Some item -> item
+ *     | _ -> "None" *)
+  
