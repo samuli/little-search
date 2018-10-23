@@ -89,7 +89,9 @@ let update model = function
   | OnSearch ->
      let params = (model.searchParams.lookfor, Array.to_list model.searchParams.filters) in
      ( { model with lastSearch = None },
-       Router.openUrl (Router.routeToUrl (SearchRoute params)))
+       Router.openUrl (Router.routeToUrl (SearchRoute params)),
+       NoUpdate
+     )
   | Search (lookfor, filters) ->
      let newSearch =
        match model.lastSearch with
@@ -100,9 +102,9 @@ let update model = function
        let params = { model.searchParams with lookfor; filters; page = 1 } in
        let cmd =
          getSearchCmd ~params in
-       ( { model with searchParams = params; nextResult = Loading }, cmd )
+       ( { model with searchParams = params; nextResult = Loading }, cmd, NoUpdate )
      else
-       ( model, Cmd.msg pageLoaded )
+       ( model, Cmd.msg pageLoaded, NoUpdate )
   | SearchMore ->
      let searchParams =
        { model.searchParams with page = model.searchParams.page+1 } in
@@ -112,24 +114,28 @@ let update model = function
          nextResult = Loading;
          lastSearch = Some model.searchParams.lookfor;
          searchParams;
-       }, cmd )
+       }, cmd, NoUpdate )
   | OnChange lookfor ->
      let searchParams = { model.searchParams with lookfor } in
-     ( { model with searchParams } , (Cmd.none) )
+     ( { model with searchParams } , (Cmd.none), NoUpdate )
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in
      let model = appendResults ~model ~newResults: result in
-     ( model, Cmd.msg pageLoaded )
+     let recIds = match model.results with
+       | Success res -> Array.map (fun r -> r.id) res.records |> Array.to_list
+       | _ -> []
+     in
+     ( model, Cmd.msg pageLoaded, UpdateRecordIds recIds )
   | GotResults (Error e) ->
      let result = Error (Http.string_of_error e) in
      let model = appendResults ~model ~newResults: result in
-     ( model, Cmd.msg pageLoaded )
+     ( model, Cmd.msg pageLoaded, NoUpdate )
   | ShowRecord r ->
      let cmd = Router.openRoute (RecordRoute r.id) in
      let visitedRecords = Array.append model.visitedRecords [| r |] in
-     ( { model with visitedRecords }, cmd )
-  | PageLoaded -> ( model, Cmd.none )
-  | OpenFacets -> ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets) )
+     ( { model with visitedRecords }, cmd, NoUpdate )
+  | PageLoaded -> ( model, Cmd.none, NoUpdate )
+  | OpenFacets -> ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets), NoUpdate )
   | FacetMsg subMsg ->
      let lookfor = match model.lastSearch with
        | Some search -> search
@@ -148,7 +154,7 @@ let update model = function
           let url = Finna.getFacetSearchUrl ~facet ~params in
           let cmd = getHttpCmd gotFacets url in
           let facets = updateFacet ~facets:model.facetModel.facets ~key:facet ~mode:"loading" ~items:[||] in
-          ( { model with facetModel = { facetModel with facets} }, cmd )
+          ( { model with facetModel = { facetModel with facets} }, cmd, NoUpdate )
        | Facet.ToggleFacetItem (mode, (filterKey, filterVal)) ->
           let filters = Array.to_list model.searchParams.filters in
           let filters = 
@@ -168,11 +174,10 @@ let update model = function
           let cmd = Router.openUrl (Router.routeToUrl (SearchRoute (model.searchParams.lookfor, (Array.to_list filters)))) in
 
           let searchParams = { model.searchParams with filters } in
-          (* let cmd = Cmd.msg (search (model.searchParams.lookfor, (Array.to_list filters))) in *)
           let model = { model with searchParams; facetModel; lastSearch = None; nextResult = Loading } in
-          ( model, cmd )
+          ( model, cmd, NoUpdate )
        | _ ->
-          ( {model with facetModel}, (Cmd.map facetMsg subCmd) )
+          ( {model with facetModel}, (Cmd.map facetMsg subCmd), NoUpdate )
      end
   | GotFacets (Ok data) ->
      let facets = match Finna.decodeFacetResults data with
@@ -181,9 +186,9 @@ let update model = function
        | Error _e -> model.facetModel.facets
        | _ -> model.facetModel.facets
      in
-     ( { model with facetModel = { model.facetModel with facets} }, Cmd.none )
+     ( { model with facetModel = { model.facetModel with facets} }, Cmd.none, NoUpdate )
   | GotFacets (Error _e) ->
-     ( model, Cmd.none )
+     ( model, Cmd.none, NoUpdate )
 
      
 let renderResultItem visitedRecords r =

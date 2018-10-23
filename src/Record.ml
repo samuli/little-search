@@ -13,15 +13,42 @@ type msg =
 
 type model = {
     record: Finna.record remoteData;
-    nextRecord: Finna.record remoteData
+    nextRecord: Finna.record remoteData;
   }
 
 let init =
   {
     record = NotAsked;
-    nextRecord = NotAsked
+    nextRecord = NotAsked;
   }
 
+let recordNeighbors id ids =
+  let rec find id ids cnt =
+    match ids with
+    | [] -> None
+    | hd :: rest ->
+       if hd = id then Some cnt else find id rest (cnt+1)
+  in
+  let (prev, next) = match find id ids 0 with
+  | None -> (None, None)
+  | Some ind -> begin
+     let ids = Array.of_list ids in
+     let len = Js.Array.length ids in
+     let prev = match ind with
+       | 0 -> None
+       | _ -> Some ids.(ind-1)
+     in
+     let next = match (len, ind, len-ind) with
+       | (a, b, _) when a = b -> None
+       | (_a, b, c) when c > 1 ->
+          let ind = b+1 in Some ids.(ind)
+       | _ -> None
+     in
+     (prev, next)
+    end
+  in
+  (prev,next)
+  
 let update model = function
   | ShowRecord id ->
      let url = Finna.getRecordUrl ~id in
@@ -153,10 +180,22 @@ let urlList (r:Finna.record) =
 
 let finnaLink id =
   p [] [ a [ href (Finna.getRecordLink id) ] [ text "View record in Finna" ] ]
-  
-let viewRecord (r:Finna.record) =
+
+let recordNavigation (record:Finna.record) context =
+  let (prevId, nextId) = recordNeighbors record.id context.recordIds in
   div [ ] [
-      h1 [] [ text r.title ]
+      (match prevId with
+       | Some id -> a [ href (Router.routeToUrl (RecordRoute id)) ] [ text "prev" ]
+       | None -> noNode )
+    ; (match nextId with
+       | Some id -> a [ href (Router.routeToUrl (RecordRoute id)) ] [ text "next" ]
+       | None -> noNode ) ]
+  
+let viewRecord (r:Finna.record) context =
+  let (prevId, nextId) = recordNeighbors r.id context.recordIds in
+  div [ ] [
+      (recordNavigation r context)
+    ; h1 [] [ text r.title ]
     ; summary r.summary
     ; authors r.authors
     ; publishInfo r
@@ -169,13 +208,13 @@ let viewRecord (r:Finna.record) =
     ; finnaLink r.id
     ]
   
-let view model =
+let view model context =
   div
     [ class' Style.recordFull ]
     [
       match model.record with
       | Loading -> statusLoading ()
       | Error e -> statusError e
-      | Success r -> viewRecord r
+      | Success r -> viewRecord r context
       | _ -> Html.noNode
     ]

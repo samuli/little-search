@@ -16,8 +16,12 @@ type model = {
     nextPage: page;
     searchModel: Search.model;
     recordModel: Record.model;
+    context: Types.context;
 }
-       
+
+let initContext =
+  { recordIds = [] }
+  
 let init () location =
   let route = Router.urlToRoute location in
   let cmd = Cmd.msg (urlChanged location) in
@@ -25,6 +29,7 @@ let init () location =
      searchModel = Search.init;
      recordModel = Record.init;     
      nextPage = Ready route;
+     context = initContext;
    }
   , cmd)
 
@@ -34,7 +39,12 @@ let subscriptions _model =
 let pageToRoute page =
   match page with
   | Loading route | Ready route -> route
-             
+
+let updateContext cmd context =
+  match cmd with
+  | UpdateRecordIds recordIds -> { recordIds }
+  | _ -> context
+       
 let update model = function
   | SearchMsg subMsg ->
      begin match subMsg with
@@ -42,10 +52,11 @@ let update model = function
         let route = pageToRoute model.nextPage in
         ( { model with route; nextPage = Ready route }, Cmd.none )
      | _ ->
-        let (searchModel, cmd) =
+        let (searchModel, cmd, contextCmd) =
           Search.update model.searchModel subMsg
         in
-       ( {model with searchModel}, (Cmd.map searchMsg cmd) )
+        let context = updateContext contextCmd model.context in
+       ( {model with searchModel; context}, (Cmd.map searchMsg cmd) )
      end
   | RecordMsg subMsg ->
      begin match subMsg with
@@ -94,7 +105,7 @@ let view model =
                      Search.view model.searchModel |> map searchMsg
                    ]
               | RecordRoute _recordId ->
-                 Record.view model.recordModel |> map recordMsg
+                 Record.view model.recordModel model.context |> map recordMsg
             ]
         ]
     ]

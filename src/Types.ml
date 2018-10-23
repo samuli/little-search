@@ -5,7 +5,15 @@ type searchLookfor = string
 type searchParam = (string * string)
 type searchParams = (searchParam list)
 
+                  
+type context = {
+    recordIds: string list;
+  }
 
+type contextUpdate =
+  | NoUpdate
+  | UpdateRecordIds of string list
+             
 type route =
   | MainRoute
   | SearchRoute of (string * searchParams)
