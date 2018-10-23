@@ -12,7 +12,6 @@ type msg =
   | SearchMore
   | OnChange of string
   | GotResults of (string, string Http.error) Result.t
-  | ShowRecord of Finna.record
   | PageLoaded
   | OpenFacets
   | FacetMsg of Facet.msg
@@ -130,10 +129,6 @@ let update model = function
      let result = Error (Http.string_of_error e) in
      let model = appendResults ~model ~newResults: result in
      ( model, Cmd.msg pageLoaded, NoUpdate )
-  | ShowRecord r ->
-     let cmd = Router.openRoute (RecordRoute r.id) in
-     let visitedRecords = Array.append model.visitedRecords [| r |] in
-     ( { model with visitedRecords }, cmd, NoUpdate )
   | PageLoaded -> ( model, Cmd.none, NoUpdate )
   | OpenFacets -> ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets), NoUpdate )
   | FacetMsg subMsg ->
@@ -199,7 +194,7 @@ let renderResultItem visitedRecords r =
         true
       with Not_found -> false
     end in
-  a [ onClick (ShowRecord r)
+  a [ href (Router.routeToUrl (RecordRoute r.id))        
     ]
     [ li [ class' (Style.recordListBkg ~visited) ]
         [
