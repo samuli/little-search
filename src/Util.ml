@@ -15,6 +15,32 @@ let extractSearchParams params =
   (lookfor, filters)
 
 
+let decodeTranslations json : (string Js.Dict.t) Types.remoteData =
+  let decode json =
+    let open Json.Decode in
+    let translations = json |> (dict string) in
+    Types.Success translations
+  in
+
+  json
+  |> Json.parseOrRaise
+  |> decode
+
+let loadTranslations lan callback =
+  let url = Printf.sprintf "/translations/%s.json" lan in
+  let open Tea in
+  Http.send callback (Http.getString url)
+
+let trans key translations =
+  match translations with
+  | Types.Success t ->
+     begin
+       match (Js.Dict.get t key) with
+       | Some txt -> txt
+       | _ -> key
+     end            
+  | _ -> key
+
 (* let storageKey = "little-search"
  *                  
  * let saveSession data =

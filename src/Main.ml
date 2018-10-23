@@ -6,6 +6,7 @@ open Types
 let _ = Style.init
 
 type msg =
+  | GotTranslations of (string, string Http.error) Result.t
   | UrlChanged of Web.Location.location
   | SearchMsg of Search.msg
   | RecordMsg of Record.msg
@@ -19,19 +20,22 @@ type model = {
     context: Types.context;
 }
 
-let initContext =
-  { recordIds = [] }
+let initContext = {
+    translations = Loading;
+    recordIds = []
+  }
   
 let init () location =
   let route = Router.urlToRoute location in
-  let cmd = Cmd.msg (urlChanged location) in
+  let translationsCmd = Util.loadTranslations "fi" gotTranslations in
+  let urlChangeCmd = Cmd.msg (urlChanged location) in
   ({ route;
      searchModel = Search.init;
      recordModel = Record.init;     
      nextPage = Ready route;
      context = initContext;
    }
-  , cmd)
+  , Cmd.batch [urlChangeCmd; translationsCmd] )
 
 let subscriptions _model =
   Sub.none
@@ -42,10 +46,19 @@ let pageToRoute page =
 
 let updateContext cmd context =
   match cmd with
-  | UpdateRecordIds recordIds -> { recordIds }
-  | _ -> context
+  | UpdateTranslations translations -> { context with translations }
+  | UpdateRecordIds recordIds -> { context with recordIds }
+  | NoUpdate -> context
        
 let update model = function
+  | GotTranslations (Ok data) ->
+     let translations = Util.decodeTranslations data in
+     let context = updateContext (UpdateTranslations translations) model.context in
+     ( { model with context }, Cmd.none )
+  | GotTranslations (Error e) ->
+     let translations = Error (Http.string_of_error e) in
+     let context = { model.context with translations } in
+     ( { model with context }, Cmd.none )
   | SearchMsg subMsg ->
      begin match subMsg with
      | Search.PageLoaded ->
@@ -92,17 +105,17 @@ let view model =
     [
       div [
           class' (Style.loadingIndicator ~show: pageLoading)
-        ] [ text "Loading..." ]
+        ] [ text (Util.trans "Loading..." model.context.translations) ]
     ; div
         [ ]
         [ p
             [ ]
             [ match model.route with
               | MainRoute ->
-                 div [] [ Search.view model.searchModel |> map searchMsg ]
+                 div [] [ Search.view model.searchModel model.context |> map searchMsg ]
               | SearchRoute _query -> 
                  div [ ] [
-                     Search.view model.searchModel |> map searchMsg
+                     Search.view model.searchModel model.context |> map searchMsg
                    ]
               | RecordRoute _recordId ->
                  Record.view model.recordModel model.context |> map recordMsg

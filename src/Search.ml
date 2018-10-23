@@ -268,7 +268,7 @@ let filters filters =
   in
   div [] (Array.to_list items)
   
-let view model =
+let view model context =
   div
     [ ]
     [ div []
@@ -287,7 +287,7 @@ let view model =
                     ] []            
                 ; input'
                     [ type' "submit"
-                    ; value "Search!"
+                    ; value (Util.trans "Search!" context.translations)
                     ]
                     []
                 ; (filters model.searchParams.filters)
