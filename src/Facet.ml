@@ -26,12 +26,16 @@ type model = {
   }
 
 let initFacets lookfor =
-  let keys = [ "format"; "building" ] in
+  let keys = [
+      (Finna.FacetBoolean, "online_boolean");
+      (Finna.FacetNormal, "format");
+      (Finna.FacetNormal, "building")
+    ] in
   let facets = Js.Dict.empty() in
-  List.iter (fun key ->
+  List.iter (fun (type', key) ->
       let facet = {
           key;
-          type' = Finna.FacetNormal;
+          type';
           items = NotAskedType [||];
           lookfor;
           opened = false
