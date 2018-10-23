@@ -8,7 +8,8 @@ let extractSearchParams params =
   in
   let filters = List.map (fun (_key, value) ->
                     match Js.String.split ":" value with
-                    | [| key; value |] -> (key, value)
+                    | [| key; value |] ->
+                       (key, (Js_global.decodeURIComponent value))
                     | _ -> (value, "")) filters
   in
   (lookfor, filters)
