@@ -29,8 +29,8 @@ let recordNeighbors id ids =
     | hd :: rest ->
        if hd = id then Some cnt else find id rest (cnt+1)
   in
-  let (prev, next) = match find id ids 0 with
-  | None -> (None, None)
+  let (prev, next, ind) = match find id ids 0 with
+  | None -> (None, None, 0)
   | Some ind -> begin
      let ids = Array.of_list ids in
      let len = Js.Array.length ids in
@@ -44,10 +44,10 @@ let recordNeighbors id ids =
           let ind = b+1 in Some ids.(ind)
        | _ -> None
      in
-     (prev, next)
+     (prev, next, ind)
     end
   in
-  (prev,next)
+  (prev,next, ind, List.length ids)
   
 let update model = function
   | ShowRecord id ->
@@ -182,17 +182,20 @@ let finnaLink id =
   p [] [ a [ href (Finna.getRecordLink id) ] [ text "View record in Finna" ] ]
 
 let recordNavigation (record:Finna.record) context =
-  let (prevId, nextId) = recordNeighbors record.id context.recordIds in
+  let (prevId, nextId, ind, totCnt) = recordNeighbors record.id context.recordIds in
   div [ ] [
       (match prevId with
        | Some id -> a [ href (Router.routeToUrl (RecordRoute id)) ] [ text "prev" ]
        | None -> noNode )
+    ; (if totCnt > 0 then
+         p [] [ text (Printf.sprintf "%d / %d" (ind+1) totCnt) ]
+       else
+         noNode)
     ; (match nextId with
        | Some id -> a [ href (Router.routeToUrl (RecordRoute id)) ] [ text "next" ]
        | None -> noNode ) ]
   
 let viewRecord (r:Finna.record) context =
-  let (prevId, nextId) = recordNeighbors r.id context.recordIds in
   div [ ] [
       (recordNavigation r context)
     ; h1 [] [ text r.title ]
