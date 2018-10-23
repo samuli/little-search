@@ -13,9 +13,10 @@ type msg =
   | OnChange of string
   | GotResults of (string, string Http.error) Result.t
   | PageLoaded
+  | RemoveFilter of (string)
   | OpenFacets
   | FacetMsg of Facet.msg
-  | GotFacets of (string, string Http.error) Result.t                   
+  | GotFacets of (string, string Http.error) Result.t
 [@@bs.deriving {accessors}]
 
                   
@@ -84,6 +85,35 @@ let updateFacet ~facets ~key ~mode ~items =
      end
   | _ -> facets
 
+let toggleFilter ~model ~filterKey ~filterVal ~mode =
+  let filters = Array.to_list model.searchParams.filters in
+  let filters = 
+    if mode then
+      let filters = Array.to_list model.searchParams.filters in
+      let filters =
+        List.filter (fun (key, _value) ->
+            key <> filterKey) filters |> Array.of_list
+      in
+      Array.append filters [| (filterKey, filterVal) |]
+    else
+      List.filter (fun (fKey, fVal) ->
+          (fVal <> filterVal && fKey <> filterKey))
+        filters
+      |> Array.of_list
+  in
+  let cmd =
+    Router.openUrl
+      (Router.routeToUrl
+         (SearchRoute
+            (model.searchParams.lookfor, (Array.to_list filters)))) in
+  let searchParams =
+    { model.searchParams with filters } in
+  let model = { model with searchParams;
+                           lastSearch = None;
+                           nextResult = Loading }
+  in
+  (cmd, model)
+  
 let update model = function
   | OnSearch ->
      let params = (model.searchParams.lookfor, Array.to_list model.searchParams.filters) in
@@ -131,6 +161,9 @@ let update model = function
      ( model, Cmd.msg pageLoaded, NoUpdate )
   | PageLoaded -> ( model, Cmd.none, NoUpdate )
   | OpenFacets -> ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets), NoUpdate )
+  | RemoveFilter filterKey ->
+     let (cmd, model) = toggleFilter ~model ~filterKey ~filterVal:"" ~mode:false in
+     (model, cmd, NoUpdate)
   | FacetMsg subMsg ->
      let lookfor = match model.lastSearch with
        | Some search -> search
@@ -151,25 +184,8 @@ let update model = function
           let facets = updateFacet ~facets:model.facetModel.facets ~key:facet ~mode:"loading" ~items:[||] in
           ( { model with facetModel = { facetModel with facets} }, cmd, NoUpdate )
        | Facet.ToggleFacetItem (mode, (filterKey, filterVal)) ->
-          let filters = Array.to_list model.searchParams.filters in
-          let filters = 
-            if mode then
-              let filters = Array.to_list model.searchParams.filters in
-              let filters =
-                List.filter (fun (key, _value) -> key <> filterKey) filters |> Array.of_list
-              in
-              Array.append filters [| (filterKey, filterVal) |]
-            else
-              List.filter (fun (fKey, fVal) ->
-                  (fVal <> filterVal && fKey <> filterKey))
-                filters
-              |> Array.of_list
-          in
-
-          let cmd = Router.openUrl (Router.routeToUrl (SearchRoute (model.searchParams.lookfor, (Array.to_list filters)))) in
-
-          let searchParams = { model.searchParams with filters } in
-          let model = { model with searchParams; facetModel; lastSearch = None; nextResult = Loading } in
+          let (cmd, model) = toggleFilter ~model ~filterKey ~filterVal ~mode in
+          let model = { model with facetModel } in
           ( model, cmd, NoUpdate )
        | _ ->
           ( {model with facetModel}, (Cmd.map facetMsg subCmd), NoUpdate )
@@ -244,6 +260,13 @@ let hasResults results =
   match results with
   | Success results when results.resultCount > 0 -> true
   | _ -> false
+
+let filters filters =
+  let items =
+    Array.map (fun (key, value) ->
+        p [ onClick (RemoveFilter key) ] [ text (Printf.sprintf "%s:%s" key value) ] ) filters
+  in
+  div [] (Array.to_list items)
   
 let view model =
   div
@@ -267,6 +290,7 @@ let view model =
                     ; value "Search!"
                     ]
                     []
+                ; (filters model.searchParams.filters)
                 ; ( if hasResults model.results = true then
                       a [ onClick OpenFacets ] [ text "facets" ]
                     else
