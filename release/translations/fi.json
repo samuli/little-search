@@ -1,10 +1,10 @@
 {
-    "Search!": "Hae!",
-    "Search more": "Hae lisää",
     "Loading...": "Odota hetki...",
+    "Narrow search", "Rajaa hakua"
     "Next": "Seuraava",
     "Previous": "Edellinen",
-    "View in Finna": "Katso Finnassa",
     "Results": "Tuloksia",
-    "Narrow search", "Rajaa hakua"
+    "Search more": "Hae lisää",
+    "Search!": "Hae!",
+    "View in Finna": "Katso Finnassa",
 }

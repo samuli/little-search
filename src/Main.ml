@@ -13,6 +13,7 @@ type msg =
 [@@bs.deriving {accessors}]
 
 type model = {
+    language: string;
     route: route;
     nextPage: page;
     searchModel: Search.model;
@@ -26,10 +27,12 @@ let initContext = {
   }
   
 let init () location =
+  let language = "fi" in
   let route = Router.urlToRoute location in
-  let translationsCmd = Util.loadTranslations "fi" gotTranslations in
+  let translationsCmd = Util.loadTranslations language gotTranslations in
   let urlChangeCmd = Cmd.msg (urlChanged location) in
-  ({ route;
+  ({ language;
+     route;
      searchModel = Search.init;
      recordModel = Record.init;     
      nextPage = Ready route;
@@ -53,7 +56,9 @@ let updateContext cmd context =
 let update model = function
   | GotTranslations (Ok data) ->
      let translations = Util.decodeTranslations data in
-     let context = updateContext (UpdateTranslations translations) model.context in
+     let context =
+       updateContext (UpdateTranslations translations) model.context
+     in
      ( { model with context }, Cmd.none )
   | GotTranslations (Error e) ->
      let translations = Error (Http.string_of_error e) in
@@ -112,13 +117,16 @@ let view model =
             [ ]
             [ match model.route with
               | MainRoute ->
-                 div [] [ Search.view model.searchModel model.context |> map searchMsg ]
+                 div [] [ Search.view model.searchModel model.context
+                          |> map searchMsg ]
               | SearchRoute _query -> 
-                 div [ ] [
-                     Search.view model.searchModel model.context |> map searchMsg
+                 div [] [
+                     Search.view model.searchModel model.context
+                     |> map searchMsg
                    ]
               | RecordRoute _recordId ->
-                 Record.view model.recordModel model.context |> map recordMsg
+                 Record.view model.recordModel model.context
+                 |> map recordMsg
             ]
         ]
     ]
