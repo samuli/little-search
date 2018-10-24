@@ -41,17 +41,17 @@ let trans key translations =
      end            
   | _ -> key
 
-(* let storageKey = "little-search"
- *                  
- * let saveSession data =
- *   let open Dom.Storage in
- *   let ls = localStorage in
- *   setItem storageKey data ls
- * 
- * let restoreSession =
- *   let open Dom.Storage in
- *   let ls = localStorage in
- *   match getItem storageKey ls with
- *     | Some item -> item
- *     | _ -> "None" *)
+let storageKey = "little-search"
+                 
+let toStorage k v =
+  let open Dom.Storage in
+  let ls = localStorage in
+  setItem k v ls
+
+let fromStorage k default =
+  let open Dom.Storage in
+  let ls = localStorage in
+  match (getItem k ls) with
+  | Some data -> data
+  | _ -> default
   

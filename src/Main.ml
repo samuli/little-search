@@ -21,14 +21,18 @@ type model = {
     context: Types.context;
 }
 
-let initContext = {
-    language = LngFi;
+let initContext ~language = {
+    language;
     translations = Loading;
     recordIds = []
   }
   
 let init () location =
-  let context = initContext in
+  let language =
+    Util.fromStorage "language" (Types.languageCode LngFi)
+    |> Types.languageOfCode
+  in
+  let context = initContext ~language in
   let route = Router.urlToRoute location in
   let translationsCmd =
     Util.loadTranslations (Types.languageCode context.language) gotTranslations in
@@ -61,6 +65,7 @@ let update model = function
      let context = { model.context with language } in
      ( { model with context }, cmd)
   | GotTranslations (Ok data) ->
+     Util.toStorage "language" (Types.languageCode model.context.language);
      let translations = Util.decodeTranslations data in
      let context =
        updateContext (UpdateTranslations translations) model.context

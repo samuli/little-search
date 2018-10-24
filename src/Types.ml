@@ -21,7 +21,18 @@ let languageCode lng =
   match lng with
   | LngFi -> "fi"
   | LngEn -> "en"
-           
+
+let languageOfCode code =
+  match code with
+  | "en" -> LngEn
+  | _ -> LngFi
+
+let finnaLanguageCode lng =
+  match lng with
+  | LngFi -> "fi"
+  | LngEn -> "en-gb"
+       
+          
 type context = {
     language: language; 
     translations: string Js.Dict.t remoteData;

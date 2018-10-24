@@ -50,6 +50,7 @@ let getHttpCmd callback url =
   Http.send callback (Http.getString url)
                
 let getSearchCmd ~params ~lng =
+  let lng = Types.finnaLanguageCode lng in
   let url = Finna.getSearchUrl ~params ~lng in
   getHttpCmd gotResults url
   
@@ -135,17 +136,16 @@ let update model context = function
        let filters = Array.of_list filters in
        let params = { model.searchParams with lookfor; filters; page = 1 } in
        let cmd =
-         getSearchCmd ~params ~lng:(Types.languageCode context.language) in
+         getSearchCmd ~params ~lng:context.language in
        ( { model with searchParams = params; nextResult = Loading },
          cmd, NoUpdate )
      else
        ( model, Cmd.msg pageLoaded, NoUpdate )
   | SearchMore ->
-     let lng = Types.languageCode context.language in
      let searchParams =
        { model.searchParams with page = model.searchParams.page+1 } in
      let cmd =
-       getSearchCmd ~params:searchParams ~lng in
+       getSearchCmd ~params:searchParams ~lng:context.language in
      ( { model with
          nextResult = Loading;
          lastSearch = Some model.searchParams.lookfor;
@@ -194,7 +194,7 @@ let update model context = function
           in
           let filters = Array.of_list filters in
           let params = { model.searchParams with filters } in
-          let lng = Types.languageCode context.language in
+          let lng = Types.finnaLanguageCode context.language in
           let url = Finna.getFacetSearchUrl ~facet ~params ~lng in
           let cmd = getHttpCmd gotFacets url in
           let facets =
