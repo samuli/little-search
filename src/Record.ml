@@ -178,21 +178,28 @@ let urlList (r:Finna.record) =
       | (None, Some url) -> li [ class' Style.recordLink ] [ a [ href url ] [ text url ] ]
       | _ -> noNode) urls)
 
-let finnaLink id =
-  p [] [ a [ href (Finna.getRecordLink id) ] [ text "View record in Finna" ] ]
+let finnaLink id context =
+  p [] [ a [ href (Finna.getRecordLink id) ]
+           [ text (Util.trans "View in Finna" context.translations) ] ]
 
 let recordNavigation (record:Finna.record) context =
   let (prevId, nextId, ind, totCnt) = recordNeighbors record.id context.recordIds in
   div [ ] [
       (match prevId with
-       | Some id -> a [ href (Router.routeToUrl (RecordRoute id)) ] [ text "prev" ]
+       | Some id ->
+          a
+            [ href (Router.routeToUrl (RecordRoute id)) ]
+            [ text (Util.trans "Previous" context.translations) ]
        | None -> noNode )
     ; (if totCnt > 0 then
          p [] [ text (Printf.sprintf "%d / %d" (ind+1) totCnt) ]
        else
          noNode)
     ; (match nextId with
-       | Some id -> a [ href (Router.routeToUrl (RecordRoute id)) ] [ text "next" ]
+       | Some id ->
+          a
+            [ href (Router.routeToUrl (RecordRoute id)) ]
+            [ text (Util.trans "Next" context.translations) ]
        | None -> noNode ) ]
   
 let viewRecord (r:Finna.record) context =
@@ -208,7 +215,7 @@ let viewRecord (r:Finna.record) context =
         ]
     ; images r.id r.images
     ; urlList r
-    ; finnaLink r.id
+    ; finnaLink r.id context
     ]
   
 let view model context =

@@ -57,7 +57,10 @@ let appendResults ~model ~newResults =
   let allResults = match (model.results, newResults, model.lastSearch) with
     | (NotAsked, _, _) | (_, _, None) -> newResults
     | (Success result, Success newRes, _) ->
-       let records = (List.append (Array.to_list result.records) (Array.to_list newRes.records)) |> Array.of_list in
+       let records = (List.append
+                        (Array.to_list result.records)
+                        (Array.to_list newRes.records)) |> Array.of_list
+       in
        Success { result with records }
     | (t, _, _) -> t 
   in
@@ -116,7 +119,9 @@ let toggleFilter ~model ~filterKey ~filterVal ~mode =
   
 let update model = function
   | OnSearch ->
-     let params = (model.searchParams.lookfor, Array.to_list model.searchParams.filters) in
+     let params = (model.searchParams.lookfor,
+                   Array.to_list model.searchParams.filters)
+     in
      ( { model with lastSearch = None },
        Router.openUrl (Router.routeToUrl (SearchRoute params)),
        NoUpdate
@@ -131,7 +136,8 @@ let update model = function
        let params = { model.searchParams with lookfor; filters; page = 1 } in
        let cmd =
          getSearchCmd ~params in
-       ( { model with searchParams = params; nextResult = Loading }, cmd, NoUpdate )
+       ( { model with searchParams = params; nextResult = Loading },
+         cmd, NoUpdate )
      else
        ( model, Cmd.msg pageLoaded, NoUpdate )
   | SearchMore ->
@@ -162,26 +168,40 @@ let update model = function
   | PageLoaded -> ( model, Cmd.none, NoUpdate )
   | OpenFacets -> ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets), NoUpdate )
   | RemoveFilter filterKey ->
-     let (cmd, model) = toggleFilter ~model ~filterKey ~filterVal:"" ~mode:false in
+     let (cmd, model) =
+       toggleFilter ~model ~filterKey ~filterVal:"" ~mode:false
+     in
      (model, cmd, NoUpdate)
   | FacetMsg subMsg ->
      let lookfor = match model.lastSearch with
        | Some search -> search
        | _ -> model.searchParams.lookfor
      in          
-     let (facetModel, subCmd) = (Facet.update ~model:model.facetModel ~lookfor ~filters:model.searchParams.filters subMsg) in 
+     let (facetModel, subCmd) =
+       (Facet.update
+          ~model:model.facetModel
+          ~lookfor
+          ~filters:model.searchParams.filters subMsg)
+     in 
      begin
        match subMsg with
        | Facet.GetFacets facet ->
           let filters =
             List.filter (fun (key, _value)
-                         -> facet <> key) (Array.to_list model.searchParams.filters)
+                         -> facet <> key)
+              (Array.to_list model.searchParams.filters)
           in
           let filters = Array.of_list filters in
           let params = { model.searchParams with filters } in
           let url = Finna.getFacetSearchUrl ~facet ~params in
           let cmd = getHttpCmd gotFacets url in
-          let facets = updateFacet ~facets:model.facetModel.facets ~key:facet ~mode:"loading" ~items:[||] in
+          let facets =
+            updateFacet
+              ~facets:model.facetModel.facets
+              ~key:facet
+              ~mode:"loading"
+              ~items:[||]
+          in
           ( { model with facetModel = { facetModel with facets} }, cmd, NoUpdate )
        | Facet.ToggleFacetItem (mode, (filterKey, filterVal)) ->
           let (cmd, model) = toggleFilter ~model ~filterKey ~filterVal ~mode in
@@ -197,7 +217,8 @@ let update model = function
        | Error _e -> model.facetModel.facets
        | _ -> model.facetModel.facets
      in
-     ( { model with facetModel = { model.facetModel with facets} }, Cmd.none, NoUpdate )
+     ( { model with facetModel = { model.facetModel with facets} },
+       Cmd.none, NoUpdate )
   | GotFacets (Error _e) ->
      ( model, Cmd.none, NoUpdate )
 
@@ -206,7 +227,9 @@ let renderResultItem visitedRecords r =
   let visited =
     begin try
         let _el =
-          List.find (fun el -> el.id = r.id) (Array.to_list visitedRecords) in
+          List.find (fun el -> el.id = r.id)
+            (Array.to_list visitedRecords)
+        in
         true
       with Not_found -> false
     end in
@@ -222,38 +245,44 @@ let renderResultItem visitedRecords r =
         ]
     ]
 
-let renderResults (result:Finna.searchResult) (model:model) =
+let renderResults (result:Finna.searchResult) (model:model) context =
   let page = model.searchParams.page in
   let limit = model.searchParams.limit in
   let pages =
     floor ((float_of_int result.resultCount) /. (float_of_int limit)) +. 0.5
     |> int_of_float in
   let items =
-    Array.map (renderResultItem model.visitedRecords) result.records |> Array.to_list
+    Array.map
+      (renderResultItem model.visitedRecords)
+      result.records
+    |> Array.to_list
   in
   div [] [
       p [ class' Style.searchResultsInfo ]
-        [ text ("Results: " ^ (string_of_int result.resultCount)) ]
+        [ text (Printf.sprintf "%s: %d"
+                  (Util.trans "Results" context.translations)
+                  result.resultCount)
+        ]
     ; ul [ class' Style.searchResults] items
     ; (if page < pages then
          match model.nextResult with
          | Loading ->
             div
               [ class' (Style.nextPage ~loading:false) ]
-              [ p [] [ text "Loading..."] ]
+              [ p [] [ text (Util.trans "Loading..." context.translations)] ]
          | _ ->
             div
               [ class' (Style.nextPage ~loading:true); onClick SearchMore ]
-              [ text "Load more" ]
+              [ text (Util.trans "Search more" context.translations) ]
        else
          noNode)
     ]
 
-let results resultList model =
+let results resultList model context =
     match resultList with
       | Error e -> statusError e
       | Loading -> statusLoading ()
-      | Success res -> renderResults res model
+      | Success res -> renderResults res model context
       | _ -> Html.noNode
 
 let hasResults results =
@@ -264,7 +293,8 @@ let hasResults results =
 let filters filters =
   let items =
     Array.map (fun (key, value) ->
-        p [ onClick (RemoveFilter key) ] [ text (Printf.sprintf "%s:%s" key value) ] ) filters
+        p [ onClick (RemoveFilter key) ]
+          [ text (Printf.sprintf "%s:%s" key value) ] ) filters
   in
   div [] (Array.to_list items)
   
@@ -275,7 +305,9 @@ let view model context =
         [
           div [ class' Style.searchBoxWrapper  ]
             [ form
-                [ onCB "submit" "" (fun ev -> ev##preventDefault (); Some(OnSearch)) ]
+                [ onCB "submit" ""
+                    (fun ev -> ev##preventDefault ();
+                               Some(OnSearch)) ]
                 [
                   input'
                     [ id "search-field"
@@ -292,7 +324,9 @@ let view model context =
                     []
                 ; (filters model.searchParams.filters)
                 ; ( if hasResults model.results = true then
-                      a [ onClick OpenFacets ] [ text "facets" ]
+                      a
+                        [ onClick OpenFacets ]
+                        [ text (Util.trans "Narrow search" context.translations) ]
                     else
                       noNode
                   )
@@ -300,7 +334,9 @@ let view model context =
             ]
         ]
     ; div []
-        [ results model.results model ] 
-    ; (Facet.view ~model: model.facetModel ~filters:model.searchParams.filters |> App.map facetMsg)
+        [ results model.results model context ] 
+    ; (Facet.view
+         ~model: model.facetModel
+         ~filters:model.searchParams.filters |> App.map facetMsg)
     ]
 
