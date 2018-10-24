@@ -31,6 +31,12 @@ let loadTranslations lan callback =
   let open Tea in
   Http.send callback (Http.getString url)
 
+let updateTranslations current append =
+  match current with
+  | Types.Success translations ->
+     Array.iter (fun (k,v) -> Js.Dict.set translations k v) append
+  | _ -> ()
+     
 let trans key translations =
   match translations with
   | Types.Success t ->
@@ -41,6 +47,7 @@ let trans key translations =
      end            
   | _ -> key
 
+  
 let storageKey = "little-search"
                  
 let toStorage k v =

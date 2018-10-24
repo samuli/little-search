@@ -213,14 +213,22 @@ let update model context = function
           ( {model with facetModel}, (Cmd.map facetMsg subCmd), NoUpdate )
      end
   | GotFacets (Ok data) ->
+     let translations = context.translations in
      let facets = match Finna.decodeFacetResults data with
        | Success (key, items) ->
+          let newTranslations =
+            Array.map
+              (fun (f:Finna.facetItem) -> (f.value, f.translated))
+              items
+          in
+          Util.updateTranslations translations newTranslations;
           updateFacet ~facets:model.facetModel.facets ~key ~mode:"success" ~items
        | Error _e -> model.facetModel.facets
        | _ -> model.facetModel.facets
      in
      ( { model with facetModel = { model.facetModel with facets} },
-       Cmd.none, NoUpdate )
+       Cmd.none,
+       (UpdateTranslations translations) )
   | GotFacets (Error _e) ->
      ( model, Cmd.none, NoUpdate )
 
@@ -292,11 +300,12 @@ let hasResults results =
   | Success results when results.resultCount > 0 -> true
   | _ -> false
 
-let filters filters =
+let filters filters context =
   let items =
     Array.map (fun (key, value) ->
+        let value = Util.trans value context.translations in 
         p [ onClick (RemoveFilter key) ]
-          [ text (Printf.sprintf "%s:%s" key value) ] ) filters
+          [ text value ] ) filters
   in
   div [] (Array.to_list items)
   
@@ -324,7 +333,7 @@ let view model context =
                     ; value (Util.trans "Search!" context.translations)
                     ]
                     []
-                ; (filters model.searchParams.filters)
+                ; (filters model.searchParams.filters context)
                 ; ( if hasResults model.results = true then
                       a
                         [ onClick OpenFacets ]
@@ -339,6 +348,7 @@ let view model context =
         [ results model.results model context ] 
     ; (Facet.view
          ~model: model.facetModel
+         ~context: context
          ~filters:model.searchParams.filters |> App.map facetMsg)
     ]
 

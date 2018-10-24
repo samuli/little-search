@@ -89,7 +89,7 @@ let isFacetActive ~filters ~facetKey ~facetValue =
     (fun (key, value) -> (facetKey = key && facetValue = value))
     (Array.to_list filters)
   
-let facetList ~facets ~filters =
+let facetList ~facets ~filters ~context =
   let renderFacetItem ~key ~(item:Finna.facetItem) ~filters =
     let isActive =
       isFacetActive ~filters ~facetKey:key ~facetValue:item.value
@@ -103,12 +103,13 @@ let facetList ~facets ~filters =
   let renderFacetItems ~key ~items ~filters =
     Array.map (fun item -> renderFacetItem ~key ~item ~filters) items
   in
-  let facet f =
+  let facet ~f ~context =
     let renderFacet ~opened ~key ~items ~css ~filters =
       li [ class' (Style.facet css)
         ]
         [
-          p [ onClick (ToggleFacet key) ] [ text key]
+          p [ onClick (ToggleFacet key) ]
+            [ text (Util.trans key context.translations) ]
         ; (if opened then ul [] (Array.to_list (renderFacetItems ~key ~items ~filters)) else noNode)
         ]
     in
@@ -122,16 +123,16 @@ let facetList ~facets ~filters =
     (let keys = Js.Dict.keys facets in
      List.map (fun key ->
          match Js.Dict.get facets key with
-         | Some f -> facet f
+         | Some f -> facet ~f ~context 
          | None -> noNode
        ) ( Array.to_list keys )
     )
   
-let view ~model ~filters =
+let view ~model ~context ~filters =
   if model.isOpen = false then noNode else
     div [ class' Style.facetModal ]
       [
         button [ onClick CloseFacets ] [ text "close" ]
       ; text "facet"
-      ; facetList ~facets:model.facets ~filters
+      ; facetList ~facets:model.facets ~filters ~context
       ]
