@@ -13,7 +13,6 @@ type msg =
 [@@bs.deriving {accessors}]
 
 type model = {
-    language: string;
     route: route;
     nextPage: page;
     searchModel: Search.model;
@@ -22,21 +21,22 @@ type model = {
 }
 
 let initContext = {
+    language = LngFi;
     translations = Loading;
     recordIds = []
   }
   
 let init () location =
-  let language = "fi" in
+  let context = initContext in
   let route = Router.urlToRoute location in
-  let translationsCmd = Util.loadTranslations language gotTranslations in
+  let translationsCmd =
+    Util.loadTranslations (Types.languageCode context.language) gotTranslations in
   let urlChangeCmd = Cmd.msg (urlChanged location) in
-  ({ language;
-     route;
+  ({ route;
      searchModel = Search.init;
      recordModel = Record.init;     
      nextPage = Ready route;
-     context = initContext;
+     context;
    }
   , Cmd.batch [urlChangeCmd; translationsCmd] )
 
@@ -71,7 +71,7 @@ let update model = function
         ( { model with route; nextPage = Ready route }, Cmd.none )
      | _ ->
         let (searchModel, cmd, contextCmd) =
-          Search.update model.searchModel subMsg
+          Search.update model.searchModel model.context subMsg
         in
         let context = updateContext contextCmd model.context in
        ( {model with searchModel; context}, (Cmd.map searchMsg cmd) )
@@ -83,7 +83,7 @@ let update model = function
         ( { model with route; nextPage = Ready route }, Cmd.none )
      | _ ->
         let (recordModel, cmd) =
-          (Record.update model.recordModel subMsg)
+          (Record.update model.recordModel model.context subMsg)
         in
        ( {model with recordModel}, (Cmd.map recordMsg cmd) )
      end

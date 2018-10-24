@@ -67,19 +67,19 @@ let getFilterQuery filters =
   (Array.map (fun (key,value) -> Printf.sprintf "filter[]=%s:%s" key value) filters)
   |> Array.to_list |> String.concat "&"
   
-let getSearchUrl params =
+let getSearchUrl params ~lng =
   let fields = getFieldQuery ["id"; "title"] in
   let filters = getFilterQuery params.filters in
-  Printf.sprintf "%s/search?lookfor=%s%s&limit=%d&page=%d&%s" apiUrl params.lookfor fields params.limit params.page filters
+  Printf.sprintf "%s/search?lookfor=%s%s&limit=%d&page=%d&%slng=%s" apiUrl params.lookfor fields params.limit params.page filters lng
 
-let getFacetSearchUrl ~facet ~params =
+let getFacetSearchUrl ~facet ~params ~lng =
   let filters = getFilterQuery params.filters in
-  Printf.sprintf "%s/search?lookfor=%s&limit=0&page=%d&facet[]=%s&%s" apiUrl params.lookfor params.page facet filters
+  Printf.sprintf "%s/search?lookfor=%s&limit=0&page=%d&facet[]=%s&%slng=%s" apiUrl params.lookfor params.page facet filters lng
   
-let getRecordUrl ~id =
+let getRecordUrl ~id ~lng =
   let id = Js_global.encodeURIComponent id in
   let fields = getFieldQuery ["id"; "title"; "authors"] in
-  Printf.sprintf "%s/record?id=%s%s" apiUrl id fields
+  Printf.sprintf "%s/record?id=%s%s&lng=%s" apiUrl id fields lng
 
 (* Decoders *)
 let urlDecoder json =

@@ -49,9 +49,11 @@ let recordNeighbors id ids =
   in
   (prev,next, ind, List.length ids)
   
-let update model = function
+let update model context = function
   | ShowRecord id ->
-     let url = Finna.getRecordUrl ~id in
+     let url =
+       Finna.getRecordUrl ~id ~lng:(Types.languageCode context.language)
+     in
      let cmd =  Http.send gotResult (Http.getString url) in
      ( { model with nextRecord = Loading }, cmd )
   | GotResult (Ok data) ->

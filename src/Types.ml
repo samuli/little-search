@@ -12,8 +12,18 @@ type 't remoteData =
   | LoadingType of 't
   | Error of string
   | Success of 't
-                  
+
+type language =
+  | LngFi
+  | LngEn
+
+let languageCode lng =
+  match lng with
+  | LngFi -> "fi"
+  | LngEn -> "en"
+           
 type context = {
+    language: language; 
     translations: string Js.Dict.t remoteData;
     recordIds: string list;
   }
