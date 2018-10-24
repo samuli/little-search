@@ -70,11 +70,11 @@ let getFilterQuery filters =
 let getSearchUrl ~params ~lng =
   let fields = getFieldQuery ["id"; "title"] in
   let filters = getFilterQuery params.filters in
-  Printf.sprintf "%s/search?lookfor=%s%s&limit=%d&page=%d&%slng=%s" apiUrl params.lookfor fields params.limit params.page filters lng
+  Printf.sprintf "%s/search?lookfor=%s%s&limit=%d&page=%d&%s&lng=%s" apiUrl params.lookfor fields params.limit params.page filters lng
 
 let getFacetSearchUrl ~facet ~params ~lng =
   let filters = getFilterQuery params.filters in
-  Printf.sprintf "%s/search?lookfor=%s&limit=0&page=%d&facet[]=%s&%slng=%s" apiUrl params.lookfor params.page facet filters lng
+  Printf.sprintf "%s/search?lookfor=%s&limit=0&page=%d&facet[]=%s&%s&lng=%s" apiUrl params.lookfor params.page facet filters lng
   
 let getRecordUrl ~id ~lng =
   let id = Js_global.encodeURIComponent id in
