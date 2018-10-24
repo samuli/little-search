@@ -50,7 +50,7 @@ let getHttpCmd callback url =
   Http.send callback (Http.getString url)
                
 let getSearchCmd ~params ~lng =
-  let url = Finna.getSearchUrl params lng in
+  let url = Finna.getSearchUrl ~params ~lng in
   getHttpCmd gotResults url
   
 let appendResults ~model ~newResults =

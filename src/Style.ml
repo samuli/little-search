@@ -227,3 +227,19 @@ let recordYear = style [ fontSize (em 0.9) ]
 let recordPublished = style [ marginRight (em 0.5) ]
 let recordSummary = style [ fontStyle `italic ]
 
+
+let languageMenu =
+  style [
+      position `fixed;
+      right (px 0);
+    ]
+  
+let language ~active =
+  style [
+    
+    fontSize (em 0.9);
+    padding2 ~v: (em 0.1) ~h: (em 0.5);
+    backgroundColor yellow;
+    marginRight (em 0.5);
+    fontWeight (if active then 800 else 300);
+    ]

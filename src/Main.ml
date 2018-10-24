@@ -6,6 +6,7 @@ open Types
 let _ = Style.init
 
 type msg =
+  | ChangeLanguage of language
   | GotTranslations of (string, string Http.error) Result.t
   | UrlChanged of Web.Location.location
   | SearchMsg of Search.msg
@@ -54,6 +55,11 @@ let updateContext cmd context =
   | NoUpdate -> context
        
 let update model = function
+  | ChangeLanguage language ->
+     let cmd =
+       Util.loadTranslations (Types.languageCode language) gotTranslations in
+     let context = { model.context with language } in
+     ( { model with context }, cmd)
   | GotTranslations (Ok data) ->
      let translations = Util.decodeTranslations data in
      let context =
@@ -100,7 +106,25 @@ let update model = function
            Cmd.map recordMsg (Cmd.msg (Record.showRecord id)))
        end in
      ( { model with nextPage }, cmd )
-       
+
+let languageMenu context =
+  let item ~lng ~currentLng =
+    let active = lng = currentLng in
+    li [
+        class' (Style.language ~active)
+      ; onClick (changeLanguage lng)
+      ]
+      [ div [] [ text (Types.languageCode lng) ] ]
+  in
+    
+  let currentLng = context.language in
+  div [] [
+    ul [ class' Style.languageMenu ] [
+          item ~lng:LngFi ~currentLng 
+        ; item ~lng:LngEn ~currentLng 
+        ]
+    ]
+  
 let view model =
   let pageLoading = match model.nextPage with
     | Loading _route -> true
@@ -113,7 +137,9 @@ let view model =
         ] [ text (Util.trans "Loading..." model.context.translations) ]
     ; div
         [ ]
-        [ p
+        [
+          (languageMenu model.context)
+          ;p
             [ ]
             [ match model.route with
               | MainRoute ->

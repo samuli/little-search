@@ -67,7 +67,7 @@ let getFilterQuery filters =
   (Array.map (fun (key,value) -> Printf.sprintf "filter[]=%s:%s" key value) filters)
   |> Array.to_list |> String.concat "&"
   
-let getSearchUrl params ~lng =
+let getSearchUrl ~params ~lng =
   let fields = getFieldQuery ["id"; "title"] in
   let filters = getFilterQuery params.filters in
   Printf.sprintf "%s/search?lookfor=%s%s&limit=%d&page=%d&%slng=%s" apiUrl params.lookfor fields params.limit params.page filters lng
