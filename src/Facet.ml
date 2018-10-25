@@ -51,10 +51,15 @@ let init = {
     filters = [||];
   }
 
+let toggleFacetMenu ~mode ~model =
+  Style.pageYScroll ~allow:(not mode);
+  { model with isOpen = mode }
+    
 let update ~model ~lookfor ~filters = function
-  | OpenFacets -> (
+  | OpenFacets ->
+    let model = toggleFacetMenu ~mode:true ~model in 
     if lookfor = model.lookfor && filters = model.filters then
-      ( { model with isOpen = true }, Cmd.none)
+      ( model, Cmd.none)
     else
       let entries = Js.Dict.entries model.facets |> Array.to_list in
       let opened =
@@ -66,8 +71,10 @@ let update ~model ~lookfor ~filters = function
           entries
       in
       let cmds = List.map (fun (key, _facet) -> Cmd.msg (getFacets key)) opened in
-      { model with lookfor; filters; isOpen = true }, Cmd.batch cmds )
-  | CloseFacets -> ( { model with isOpen = false }, Cmd.none )
+      ( { model with lookfor; filters }, Cmd.batch cmds )  
+  | CloseFacets ->
+    let model = toggleFacetMenu ~mode:false ~model in
+    ( model, Cmd.none )
   | ToggleFacet key ->
      let facets = model.facets in
      let (facets, cmd) = match Js.Dict.get facets key with
@@ -81,7 +88,8 @@ let update ~model ~lookfor ~filters = function
      in
      ( { model with facets }, cmd)
   | ToggleFacetItem (_,_) ->
-     ( { model with isOpen = false }, Cmd.none)
+    let model = toggleFacetMenu ~mode:false ~model in
+     ( model, Cmd.none)
   | GetFacets _-> (model, Cmd.none)
 
 let isFacetActive ~filters ~facetKey ~facetValue =

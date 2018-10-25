@@ -101,7 +101,14 @@ let loadingIndicator ~show =
  *       animation ~duration: 750 ~timingFunction: `easeInOut ~direction: `alternateReverse ~iterationCount: `infinite frames
  *     ] *)
   
-      
+let pageYScroll ~allow =
+  let body = Web_document.body() in
+  let css = "preventYScroll" in
+  if not allow then
+    Web.Node.setAttribute body "class" css
+  else
+    Web.Node.removeAttribute body "class"
+
 let statusStyle ~error =
   let bkgColor = if error then red else white in
   style [
@@ -138,15 +145,18 @@ let searchBoxWrapper =
     backgroundColor greyLight
     ]
 
+
 let facetModal =
   style [
       position `fixed;
       top (px 0);
       width (`percent 100.0);
       height (`percent 100.0);
-      backgroundColor green
+      backgroundColor green;
+      overflowY `scroll;
     ]
-  
+
+
 let facets =
   style [
     backgroundColor greyLighter;
