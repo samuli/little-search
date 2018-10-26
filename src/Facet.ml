@@ -59,9 +59,13 @@ let update ~model ~lookfor ~filters = function
   | OpenFacets ->
     let model = toggleFacetMenu ~mode:true ~model in 
     if lookfor = model.lookfor && filters = model.filters then
-      ( model, Cmd.none)
+      begin
+        ( model, Cmd.none)
+      end
     else
       let entries = Js.Dict.entries model.facets |> Array.to_list in
+
+      (* toggle previously opened facets open *)
       let opened =
         List.filter (fun (_key, facet) ->
             match (facet, facet.items) with
@@ -70,8 +74,24 @@ let update ~model ~lookfor ~filters = function
             | (_, _) -> true)
           entries
       in
-      let cmds = List.map (fun (key, _facet) -> Cmd.msg (getFacets key)) opened in
-      ( { model with lookfor; filters }, Cmd.batch cmds )  
+      let cmds =
+        List.map (fun (key, _facet) -> Cmd.msg (getFacets key)) opened
+      in
+
+      (* toggle active but closed facets open *)
+      let activeButClosed =
+        List.filter (fun (key, _value) ->
+            not (List.exists
+              (fun (facetKey, _facetValue) -> facetKey = key) opened))
+          (Array.to_list filters)
+      in          
+      let cmds2 =
+        List.map (fun (key, _facet) ->
+            Cmd.msg (toggleFacet key)) activeButClosed
+      in
+      
+      ( { model with lookfor; filters },
+        Cmd.batch (List.concat [ cmds; cmds2 ]) )  
   | CloseFacets ->
     let model = toggleFacetMenu ~mode:false ~model in
     ( model, Cmd.none )
