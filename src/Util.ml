@@ -62,3 +62,7 @@ let fromStorage k default =
   | Some data -> data
   | _ -> default
   
+let resetPageScroll _ =
+  [%bs.raw
+      {| document.documentElement.scrollTop = 0 |}
+  ];

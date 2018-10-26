@@ -90,6 +90,7 @@ let update model = function
   | RecordMsg subMsg ->
      begin match subMsg with
      | Record.PageLoaded ->
+        let _ = Util.resetPageScroll () in
         let route = pageToRoute model.nextPage in
         ( { model with route; nextPage = Ready route }, Cmd.none )
      | _ ->
