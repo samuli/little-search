@@ -303,10 +303,10 @@ let hasResults results =
 let filters filters context =
   let items =
     Array.map (fun (key, value) ->
-        let key = Util.trans key context.translations in
+        let label = Util.trans key context.translations in
         let value = Util.trans value context.translations in 
         p [ onClick (RemoveFilter key) ]
-          [ text (Printf.sprintf "%s: %s" key value) ] ) filters
+          [ text (Printf.sprintf "%s: %s" label value) ] ) filters
   in
   div [] (Array.to_list items)
   
