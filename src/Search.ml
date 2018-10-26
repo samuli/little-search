@@ -248,7 +248,9 @@ let renderResultItem visitedRecords r =
     [ li [ class' (Style.recordListBkg ~visited) ]
         [
           Record.authors r.authors
-        ; h1 [] [ text r.title ]
+        ; (match r.title with
+           | Some title when title <> "" -> h1 [] [ text title ]
+           | _ -> noNode)
         ; Record.formats r.formats
         ; Record.publishInfo r
         ; Record.buildings r.buildings

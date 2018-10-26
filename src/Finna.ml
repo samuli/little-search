@@ -21,7 +21,7 @@ type translated = {
                 
 type record = {
   id: string;
-  title: string;
+  title: string option;
   formats: translated array option;
   images: string array option;
   authors: string array option;
@@ -113,7 +113,7 @@ let recordDecoder json =
   let open Json.Decode in
   {
     id = json |> field "id" string;
-    title = json |> field "title" string;
+    title = json |> (optional (field "title" string));
     formats = json |> (optional (field "formats" (array translatedDecoder)));
     buildings = json |> (optional (field "buildings" (array translatedDecoder)));
     images = json |> (optional (field "images" (array string)));

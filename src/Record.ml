@@ -207,7 +207,9 @@ let recordNavigation (record:Finna.record) context =
 let viewRecord (r:Finna.record) context =
   div [ ] [
       (recordNavigation r context)
-    ; h1 [] [ text r.title ]
+    ; (match r.title with
+       | Some title when title <> "" -> h1 [] [ text title ]
+       | _ -> noNode)
     ; summary r.summary
     ; authors r.authors
     ; publishInfo r
