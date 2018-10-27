@@ -6,10 +6,12 @@ open View
 open Tea
 open Tea.Html
 
+type searchDir = PrevPage | NextPage
+                      
 type msg =
   | OnSearch
-  | Search of (string * Types.searchParams)
-  | SearchMore
+  | Search of Types.searchParams
+  | SearchMore of searchDir
   | OnChange of string
   | GotResults of (string, string Http.error) Result.t
   | PageLoaded
@@ -19,10 +21,19 @@ type msg =
   | GotFacets of (string, string Http.error) Result.t
 [@@bs.deriving {accessors}]
 
-                  
+
+type searchResultPageType = {
+    page: int;
+    results: Finna.searchResult;
+  }
+type searchResultsType = {
+    count: int;
+    pageCount: int;
+    pages: searchResultPageType remoteData array;
+  }
 type model = {
-    searchParams: Types.searchParamsType;
-    results: Finna.searchResult remoteData;
+    searchParams: Types.searchParams;
+    results: searchResultsType;
     lastSearch: string option;
     nextResult: Finna.searchResult remoteData;
     visitedRecords: Finna.record array;
@@ -30,16 +41,24 @@ type model = {
     facetModel: Facet.model
   }
 
+
+let initResults =
+  {
+    count = 0;
+    pageCount = 0;
+    pages = [||];
+  }
+
 let init =
   {
     searchParams = {
       lookfor = "";
-      page = 1;
-      limit = 30;
-      filters = [||];
+      page = 0;
+      limit = 3;
+      filters = [];
     };
     lastSearch = None;
-    results = NotAsked;
+    results = initResults;
     nextResult = NotAsked;
     visitedRecords = [||];
     facetsOpen = false;
@@ -49,24 +68,33 @@ let init =
 let getHttpCmd callback url =
   Http.send callback (Http.getString url)
                
-let getSearchCmd ~params ~lng =
+let getSearchCmd ~(params:Types.searchParams) ~lng =
   let lng = Types.finnaLanguageCode lng in
+  let params = { params with page = params.page+1 } in
   let url = Finna.getSearchUrl ~params ~lng in
   getHttpCmd gotResults url
   
 let appendResults ~model ~newResults =
-  let allResults = match (model.results, newResults, model.lastSearch) with
-    | (NotAsked, _, _) | (_, _, None) -> newResults
-    | (Success result, Success newRes, _) ->
-       let records = (List.append
-                        (Array.to_list result.records)
-                        (Array.to_list newRes.records)) |> Array.of_list
-       in
-       Success { result with records }
-    | (t, _, _) -> t 
+  let page = model.searchParams.page in
+
+  let (resultPage, count)  = match newResults with
+    | Success res -> begin
+        let count = res.resultCount in
+        let resultPage = (Success { page; results = res }) in
+        (resultPage, count)
+      end
+    | _ -> ((Error ""), 0)
   in
+
+  let pages = Array.append model.results.pages [| resultPage |] in
+  let pageCount =
+    ceil ((float_of_int count) /. (float_of_int model.searchParams.limit)) +. 0.5
+    |> int_of_float in
+
+  let results = { pages; count; pageCount } in
+  
   { model with
-    results = allResults;
+    results;
     nextResult = NotAsked;
     lastSearch = Some model.searchParams.lookfor
   }
@@ -90,10 +118,9 @@ let updateFacet ~facets ~key ~mode ~items =
   | _ -> facets
 
 let toggleFilter ~model ~filterKey ~filterVal ~mode =
-  let filters = Array.to_list model.searchParams.filters in
+  let filters = model.searchParams.filters in
   let filters = 
     if mode then
-      let filters = Array.to_list model.searchParams.filters in
       let filters =
         List.filter (fun (key, _value) ->
             key <> filterKey) filters |> Array.of_list
@@ -105,13 +132,8 @@ let toggleFilter ~model ~filterKey ~filterVal ~mode =
         filters
       |> Array.of_list
   in
-  let cmd =
-    Router.openUrl
-      (Router.routeToUrl
-         (SearchRoute
-            (model.searchParams.lookfor, (Array.to_list filters)))) in
-  let searchParams =
-    { model.searchParams with filters } in
+  let searchParams = { model.searchParams with filters = Array.to_list filters } in
+  let cmd = Router.openUrl (Router.routeToUrl (SearchRoute searchParams)) in
   let model = { model with searchParams;
                            lastSearch = None;
                            nextResult = Loading }
@@ -120,47 +142,54 @@ let toggleFilter ~model ~filterKey ~filterVal ~mode =
   
 let update model context = function
   | OnSearch ->
-     let params = (model.searchParams.lookfor,
-                   Array.to_list model.searchParams.filters)
-     in
      ( { model with lastSearch = None },
-       Router.openUrl (Router.routeToUrl (SearchRoute params)),
+       Router.openUrl (Router.routeToUrl (SearchRoute model.searchParams)),
        NoUpdate
      )
-  | Search (lookfor, filters) ->
+  | Search params ->
      let newSearch =
        match model.lastSearch with
        | None -> true
-       | Some query -> not (query == model.searchParams.lookfor) in
-     if newSearch then
-       let filters = Array.of_list filters in
-       let params = { model.searchParams with lookfor; filters; page = 1 } in
-       let cmd =
-         getSearchCmd ~params ~lng:context.language in
-       ( { model with searchParams = params; nextResult = Loading },
-         cmd, NoUpdate )
-     else
-       ( model, Cmd.msg pageLoaded, NoUpdate )
-  | SearchMore ->
+       | Some query -> not (query == params.lookfor) in
+     let model = {
+         model with nextResult = Loading;
+                    searchParams = params }
+     in
+     let model = if newSearch then
+                   { model with results = initResults }
+                 else
+                   model
+     in
+     let cmd = getSearchCmd ~params ~lng:context.language in
+     ( model, cmd, NoUpdate )
+  | SearchMore dir ->
+     let page = model.searchParams.page in
+     let page = match dir with
+       | NextPage -> page+1
+       | PrevPage -> page-1
+     in
      let searchParams =
-       { model.searchParams with page = model.searchParams.page+1 } in
-     let cmd =
-       getSearchCmd ~params:searchParams ~lng:context.language in
-     ( { model with
-         nextResult = Loading;
-         lastSearch = Some model.searchParams.lookfor;
-         searchParams;
-       }, cmd, NoUpdate )
+       { model.searchParams with page } in
+     ( { model with searchParams; nextResult = Loading },
+       Router.openUrl (Router.routeToUrl (SearchRoute searchParams)),
+       NoUpdate )
+
+     (* let cmd =
+      *   getSearchCmd ~params:searchParams ~lng:context.language in
+      * ( { model with
+      *     nextResult = Loading;
+      *     lastSearch = Some model.searchParams.lookfor;
+      *     searchParams;
+      *   }, cmd, NoUpdate ) *)
+
   | OnChange lookfor ->
      let searchParams = { model.searchParams with lookfor } in
      ( { model with searchParams } , (Cmd.none), NoUpdate )
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in
      let model = appendResults ~model ~newResults: result in
-     let recIds = match model.results with
-       | Success res -> Array.map (fun r -> r.id) res.records |> Array.to_list
-       | _ -> []
-     in
+     let recIds = [] in
+     
      ( model, Cmd.msg pageLoaded, UpdateRecordIds recIds )
   | GotResults (Error e) ->
      let result = Error (Http.string_of_error e) in
@@ -182,7 +211,7 @@ let update model context = function
        (Facet.update
           ~model:model.facetModel
           ~lookfor
-          ~filters:model.searchParams.filters subMsg)
+          ~filters:model.searchParams.filters subMsg) (* TODO *)
      in 
      begin
        match subMsg with
@@ -190,9 +219,8 @@ let update model context = function
           let filters =
             List.filter (fun (key, _value)
                          -> facet <> key)
-              (Array.to_list model.searchParams.filters)
+              model.searchParams.filters
           in
-          let filters = Array.of_list filters in
           let params = { model.searchParams with filters } in
           let lng = Types.finnaLanguageCode context.language in
           let url = Finna.getFacetSearchUrl ~facet ~params ~lng in
@@ -257,60 +285,81 @@ let renderResultItem visitedRecords r =
         ]
     ]
 
-let renderResults (result:Finna.searchResult) (model:model) context =
-  let page = model.searchParams.page in
-  let limit = model.searchParams.limit in
-  let pages =
-    floor ((float_of_int result.resultCount) /. (float_of_int limit)) +. 0.5
-    |> int_of_float in
+let isPageLoading ~page ~results =
+  Js.log (Printf.sprintf "isloading %d, len%d" page (Array.length results));
+  if Array.length results > (page-1) then false else
+    begin
+      Js.log "2";
+      match results.(page) with
+      | Loading -> true
+      | _ -> false
+    end
+  
+let resultPageLoadNeighbor ~dir ~page ~results ~context =
+  Js.log (Printf.sprintf "neigh: %d" page);
+  if isPageLoading ~page ~results then
+     div
+       [ class' (Style.nextPage ~loading:false) ]
+       [ p [] [ text (Util.trans "Loading..." context.translations)] ]
+  else
+    div
+       [ class' (Style.nextPage ~loading:true); onClick (SearchMore dir) ]
+       [ text (Util.trans "Search more" context.translations) ]
+  
+let renderResultPage (result:searchResultPageType) (model:model) context =
+  let page = result.page in
+  let records = result.results.records in
   let items =
     Array.map
       (renderResultItem model.visitedRecords)
-      result.records
+      records
     |> Array.to_list
   in
   div [] [
-      p [ class' Style.searchResultsInfo ]
-        [ text (Printf.sprintf "%s: %d"
-                  (Util.trans "Results" context.translations)
-                  result.resultCount)
-        ]
+      (if page > 0 then
+         resultPageLoadNeighbor ~dir:PrevPage ~page:(page-1) ~results:model.results.pages ~context
+       else
+         noNode)
     ; ul [ class' Style.searchResults] items
-    ; (if page < pages then
-         match model.nextResult with
-         | Loading ->
-            div
-              [ class' (Style.nextPage ~loading:false) ]
-              [ p [] [ text (Util.trans "Loading..." context.translations)] ]
-         | _ ->
-            div
-              [ class' (Style.nextPage ~loading:true); onClick SearchMore ]
-              [ text (Util.trans "Search more" context.translations) ]
+    ; (if page < (model.results.pageCount-1) then
+       resultPageLoadNeighbor ~dir:NextPage ~page ~results:model.results.pages ~context
        else
          noNode)
     ]
 
-let results resultList model context =
-    match resultList with
+let renderResultPage ~page ~model ~context =
+    match (page) with
       | Error e -> statusError e
       | Loading -> statusLoading ()
-      | Success res -> renderResults res model context
+      | Success res -> renderResultPage res model context
       | _ -> Html.noNode
 
+let results ~results ~model ~context =
+  div []
+    [
+      p [ class' Style.searchResultsInfo ]
+        [ text (Printf.sprintf "%s: %d"
+                  (Util.trans "Results" context.translations)
+                  results.count)
+        ]
+    ; div [] 
+        ((Array.map (fun page->
+              renderResultPage ~page ~model ~context) results.pages)
+         |> Array.to_list)
+    ]
+  
 let hasResults results =
-  match results with
-  | Success results when results.resultCount > 0 -> true
-  | _ -> false
+  if results.count > 0 then true else false
 
 let filters filters context =
   let items =
-    Array.map (fun (key, value) ->
+    List.map (fun (key, value) ->
         let label = Util.trans key context.translations in
         let value = Util.trans value context.translations in 
         p [ onClick (RemoveFilter key) ]
           [ text (Printf.sprintf "%s: %s" label value) ] ) filters
   in
-  div [] (Array.to_list items)
+  div [] items
   
 let view model context =
   div
@@ -348,7 +397,7 @@ let view model context =
             ]
         ]
     ; div []
-        [ results model.results model context ] 
+        [ results ~results:model.results ~model ~context ] 
     ; (Facet.view
          ~model: model.facetModel
          ~context: context

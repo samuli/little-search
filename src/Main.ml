@@ -40,17 +40,17 @@ let init () location =
   ({ route;
      searchModel = Search.init;
      recordModel = Record.init;     
-     nextPage = Ready route;
+     nextPage = PageReady route;
      context;
    }
   , Cmd.batch [urlChangeCmd; translationsCmd] )
-
+ 
 let subscriptions _model =
   Sub.none
 
 let pageToRoute page =
   match page with
-  | Loading route | Ready route -> route
+  | PageLoading route | PageReady route -> route
 
 let updateContext cmd context =
   match cmd with
@@ -79,7 +79,7 @@ let update model = function
      begin match subMsg with
      | Search.PageLoaded ->
         let route = pageToRoute model.nextPage in
-        ( { model with route; nextPage = Ready route }, Cmd.none )
+        ( { model with route; nextPage = PageReady route }, Cmd.none )
      | _ ->
         let (searchModel, cmd, contextCmd) =
           Search.update model.searchModel model.context subMsg
@@ -92,7 +92,7 @@ let update model = function
      | Record.PageLoaded ->
         let _ = Util.resetPageScroll () in
         let route = pageToRoute model.nextPage in
-        ( { model with route; nextPage = Ready route }, Cmd.none )
+        ( { model with route; nextPage = PageReady route }, Cmd.none )
      | _ ->
         let (recordModel, cmd) =
           (Record.update model.recordModel model.context subMsg)
@@ -103,12 +103,12 @@ let update model = function
      let route = Router.urlToRoute location in
      let (nextPage, cmd) =
        begin match (route:Types.route) with
-       | MainRoute -> ((Ready MainRoute), Cmd.none)
+       | MainRoute -> ((PageReady MainRoute), Cmd.none)
        | SearchRoute query ->
-          ((Loading (SearchRoute query)),
+          ((PageLoading (SearchRoute query)),
            Cmd.map searchMsg (Cmd.msg (Search.search query)))
        | RecordRoute id ->
-          ((Loading (RecordRoute id)),
+          ((PageLoading (RecordRoute id)),
            Cmd.map recordMsg (Cmd.msg (Record.showRecord id)))
        end in
      ( { model with nextPage }, cmd )
@@ -133,9 +133,9 @@ let languageMenu context =
   
 let view model =
   let pageLoading = match model.nextPage with
-    | Loading _route -> true
-    | Ready _route -> false
-  in
+    | PageLoading _route -> true
+    | PageReady _route -> false
+  in 
   div []
     [
       div [

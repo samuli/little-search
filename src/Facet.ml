@@ -22,7 +22,7 @@ type model = {
     isOpen: bool;
     lookfor: string;
     facets: facet Js.Dict.t;
-    filters: Types.searchParam array
+    filters: Types.searchParam list
   }
 
 let initFacets lookfor =
@@ -48,7 +48,7 @@ let init = {
     isOpen = false;
     lookfor = "";
     facets = initFacets "";
-    filters = [||];
+    filters = [];
   }
 
 let toggleFacetMenu ~mode ~model =
@@ -83,7 +83,7 @@ let update ~model ~lookfor ~filters = function
         List.filter (fun (key, _value) ->
             not (List.exists
               (fun (facetKey, _facetValue) -> facetKey = key) opened))
-          (Array.to_list filters)
+          filters
       in          
       let cmds2 =
         List.map (fun (key, _facet) ->
@@ -115,7 +115,7 @@ let update ~model ~lookfor ~filters = function
 let isFacetActive ~filters ~facetKey ~facetValue =
   List.exists
     (fun (key, value) -> (facetKey = key && facetValue = value))
-    (Array.to_list filters)
+    filters
   
 let facetList ~facets ~filters ~context =
   let renderFacetItem ~key ~(item:Finna.facetItem) ~filters =

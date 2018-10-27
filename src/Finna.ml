@@ -64,8 +64,8 @@ let getFieldQuery _fields =
   List.map (fun f -> "&field[]=" ^ f) fields |> String.concat ""
 
 let getFilterQuery filters =
-  (Array.map (fun (key,value) -> Printf.sprintf "filter[]=%s:%s" key value) filters)
-  |> Array.to_list |> String.concat "&"
+  (List.map (fun (key,value) -> Printf.sprintf "filter[]=%s:%s" key value) filters)
+  |> String.concat "&"
   
 let getSearchUrl ~params ~lng =
   let fields = getFieldQuery ["id"; "title"] in

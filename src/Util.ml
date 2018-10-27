@@ -3,6 +3,15 @@ let extractSearchParams params =
   | (_, lookfor) -> lookfor
   | exception Not_found -> ""
   in
+  let page = match List.find (fun (key, _value) -> key = "page") params with
+  | (_, page) -> page
+  | exception Not_found -> "0"
+  in
+  let limit = match List.find (fun (key, _value) -> key = "limit") params with
+  | (_, limit) -> limit
+  | exception Not_found -> "10"
+  in
+
   let filters =
     List.filter (fun (key, _value) -> key = "filter[]") params
   in
@@ -12,8 +21,7 @@ let extractSearchParams params =
                        (key, (Js_global.decodeURIComponent value))
                     | _ -> (value, "")) filters
   in
-  (lookfor, filters)
-
+  (lookfor, filters, page, limit)
 
 let decodeTranslations json : (string Js.Dict.t) Types.remoteData =
   let decode json =

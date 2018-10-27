@@ -3,7 +3,12 @@ type recordId = string
               
 type searchLookfor = string
 type searchParam = (string * string)
-type searchParams = (searchParam list)
+type searchParams = {
+    lookfor: string;
+    filters: searchParam list;
+    page: int;
+    limit: int;
+  }
 
 type 't remoteData =
   | NotAsked
@@ -47,24 +52,24 @@ type contextUpdate =
              
 type route =
   | MainRoute
-  | SearchRoute of (string * searchParams)
+  | SearchRoute of searchParams
   | RecordRoute of recordId
 
 
 type page =
-  | Ready of route
-  | Loading of route
+  | PageReady of route
+  | PageLoading of route
 
 (* type filterType = {
  *     key: string;
  *     value: string
  *   } *)
 
-type searchParamsType = {
-    lookfor: string;
-    limit: int;
-    page: int;
-    filters: searchParam array;
-  }
+(* type searchParamsType = {
+ *     lookfor: string;
+ *     limit: int;
+ *     page: int;
+ *     filters: searchParam array;
+ *   } *)
 
                           
