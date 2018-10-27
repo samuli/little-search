@@ -11,7 +11,7 @@ type searchDir = PrevPage | NextPage
 type msg =
   | OnSearch
   | Search of Types.searchParams
-  | SearchMore of searchDir
+  | SearchMore of int
   | OnChange of string
   | GotResults of (string, string Http.error) Result.t
   | PageLoaded
@@ -24,18 +24,18 @@ type msg =
 
 type searchResultPageType = {
     page: int;
-    results: Finna.searchResult;
+    results: Finna.searchResult remoteData;
   }
 type searchResultsType = {
     count: int;
     pageCount: int;
-    pages: searchResultPageType remoteData array;
+    pages: searchResultPageType Js.Dict.t;
   }
 type model = {
     searchParams: Types.searchParams;
     results: searchResultsType;
     lastSearch: string option;
-    nextResult: Finna.searchResult remoteData;
+    nextResult: searchResultPageType remoteData;
     visitedRecords: Finna.record array;
     facetsOpen: bool;
     facetModel: Facet.model
@@ -46,7 +46,7 @@ let initResults =
   {
     count = 0;
     pageCount = 0;
-    pages = [||];
+    pages = Js.Dict.empty();
   }
 
 let init =
@@ -75,18 +75,24 @@ let getSearchCmd ~(params:Types.searchParams) ~lng =
   getHttpCmd gotResults url
   
 let appendResults ~model ~newResults =
-  let page = model.searchParams.page in
+  let page = match model.nextResult with
+    | LoadingType page -> page.page
+    | _ -> model.searchParams.page
+  in
 
+  Js.log (Printf.sprintf "append: %d" page);
+  
   let (resultPage, count)  = match newResults with
     | Success res -> begin
         let count = res.resultCount in
-        let resultPage = (Success { page; results = res }) in
+        let resultPage = { page; results = Success res } in
         (resultPage, count)
       end
-    | _ -> ((Error ""), 0)
+    | _ -> ({ page; results = Error ""}, 0)
   in
 
-  let pages = Array.append model.results.pages [| resultPage |] in
+  let pages = model.results.pages in
+  Js.Dict.set pages (string_of_int page) resultPage;
   let pageCount =
     ceil ((float_of_int count) /. (float_of_int model.searchParams.limit)) +. 0.5
     |> int_of_float in
@@ -151,10 +157,8 @@ let update model context = function
        match model.lastSearch with
        | None -> true
        | Some query -> not (query == params.lookfor) in
-     let model = {
-         model with nextResult = Loading;
-                    searchParams = params }
-     in
+     let nextResult = (LoadingType { page = params.page; results = Loading }) in
+     let model = { model with nextResult; searchParams = params } in
      let model = if newSearch then
                    { model with results = initResults }
                  else
@@ -162,26 +166,13 @@ let update model context = function
      in
      let cmd = getSearchCmd ~params ~lng:context.language in
      ( model, cmd, NoUpdate )
-  | SearchMore dir ->
-     let page = model.searchParams.page in
-     let page = match dir with
-       | NextPage -> page+1
-       | PrevPage -> page-1
-     in
+  | SearchMore page ->
+     let nextResult = (LoadingType { page; results = Loading }) in
      let searchParams =
        { model.searchParams with page } in
-     ( { model with searchParams; nextResult = Loading },
+     ( { model with searchParams; nextResult },
        Router.openUrl (Router.routeToUrl (SearchRoute searchParams)),
        NoUpdate )
-
-     (* let cmd =
-      *   getSearchCmd ~params:searchParams ~lng:context.language in
-      * ( { model with
-      *     nextResult = Loading;
-      *     lastSearch = Some model.searchParams.lookfor;
-      *     searchParams;
-      *   }, cmd, NoUpdate ) *)
-
   | OnChange lookfor ->
      let searchParams = { model.searchParams with lookfor } in
      ( { model with searchParams } , (Cmd.none), NoUpdate )
@@ -211,7 +202,7 @@ let update model context = function
        (Facet.update
           ~model:model.facetModel
           ~lookfor
-          ~filters:model.searchParams.filters subMsg) (* TODO *)
+          ~filters:model.searchParams.filters subMsg)
      in 
      begin
        match subMsg with
@@ -285,30 +276,36 @@ let renderResultItem visitedRecords r =
         ]
     ]
 
-let isPageLoading ~page ~results =
-  Js.log (Printf.sprintf "isloading %d, len%d" page (Array.length results));
-  if Array.length results > (page-1) then false else
-    begin
-      Js.log "2";
-      match results.(page) with
-      | Loading -> true
-      | _ -> false
-    end
+let isPageLoading ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) =
+  Js.log (Printf.sprintf "isloading %d" pageNum);
+  Js.log resultPages;
   
-let resultPageLoadNeighbor ~dir ~page ~results ~context =
-  Js.log (Printf.sprintf "neigh: %d" page);
-  if isPageLoading ~page ~results then
+  match Js.Dict.get resultPages (string_of_int pageNum) with
+  | Some page -> begin
+      match page.results with
+      | LoadingType _ -> Loading
+      | Success p -> Success p
+      | NotAsked -> NotAsked
+      | _ -> Error ""
+    end
+  | _ -> NotAsked
+  
+let resultPageLoadNeighbor ~dir ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) ~context =
+  Js.log (Printf.sprintf "neigh: %d" pageNum);
+  match isPageLoading ~pageNum ~resultPages with
+  | Loading ->
      div
        [ class' (Style.nextPage ~loading:false) ]
        [ p [] [ text (Util.trans "Loading..." context.translations)] ]
-  else
+  | NotAsked ->
     div
-       [ class' (Style.nextPage ~loading:true); onClick (SearchMore dir) ]
-       [ text (Util.trans "Search more" context.translations) ]
+       [ class' (Style.nextPage ~loading:true); onClick (SearchMore pageNum) ]
+       [ text ((Util.trans "Search more" context.translations) ^ (string_of_int pageNum)) ]
+  | _ -> noNode
   
-let renderResultPage (result:searchResultPageType) (model:model) context =
-  let page = result.page in
-  let records = result.results.records in
+let renderResultPage pageNum searchResult (model:model) context =
+  Js.log (Printf.sprintf "pagecnt: %d" model.results.pageCount);
+  let records = searchResult.records in
   let items =
     Array.map
       (renderResultItem model.visitedRecords)
@@ -316,25 +313,39 @@ let renderResultPage (result:searchResultPageType) (model:model) context =
     |> Array.to_list
   in
   div [] [
-      (if page > 0 then
-         resultPageLoadNeighbor ~dir:PrevPage ~page:(page-1) ~results:model.results.pages ~context
+      (if pageNum > 0 then
+         resultPageLoadNeighbor
+           ~dir:PrevPage ~pageNum:(pageNum-1)
+           ~resultPages:model.results.pages
+           ~context
        else
          noNode)
-    ; ul [ class' Style.searchResults] items
-    ; (if page < (model.results.pageCount-1) then
-       resultPageLoadNeighbor ~dir:NextPage ~page ~results:model.results.pages ~context
+    ; ul [ class' Style.searchResults] [ p [] [ text (string_of_int pageNum) ] ; div [] items ]
+    ; (if pageNum < (model.results.pageCount-1) then
+         resultPageLoadNeighbor
+           ~dir:NextPage
+           ~pageNum:(pageNum+1)
+           ~resultPages:model.results.pages
+           ~context
        else
          noNode)
     ]
 
-let renderResultPage ~page ~model ~context =
-    match (page) with
-      | Error e -> statusError e
-      | Loading -> statusLoading ()
-      | Success res -> renderResultPage res model context
+let resultPage ~(page:searchResultPageType) ~model ~context =
+    match (page.results, page.page) with
+      | (Error e, _) -> statusError e
+      | (Loading, _) -> statusLoading ()
+      | (Success res, pageNum) -> renderResultPage pageNum res model context
       | _ -> Html.noNode
 
 let results ~results ~model ~context =
+  let pageNums = Js.Dict.keys results.pages in
+  Array.sort (fun a b ->
+      let a = int_of_string a in
+      let b = int_of_string b in
+      if a > b then 1 else -1) pageNums;
+  
+                             
   div []
     [
       p [ class' Style.searchResultsInfo ]
@@ -343,8 +354,10 @@ let results ~results ~model ~context =
                   results.count)
         ]
     ; div [] 
-        ((Array.map (fun page->
-              renderResultPage ~page ~model ~context) results.pages)
+        ((Array.map (fun pageNum->
+              match Js.Dict.get results.pages pageNum with
+              | Some page -> resultPage ~page ~model ~context
+              | _ -> noNode) pageNums)
          |> Array.to_list)
     ]
   
