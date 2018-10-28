@@ -8,6 +8,7 @@ type searchParams = {
     filters: searchParam list;
     page: int;
     limit: int;
+    (* record: recordId option; *)
   }
 
 type 't remoteData =

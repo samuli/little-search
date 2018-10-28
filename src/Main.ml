@@ -2,7 +2,7 @@ open Tea
 open App
 open Tea.Html
 open Types
-
+ 
 let _ = Style.init
 
 type msg =
@@ -13,7 +13,8 @@ type msg =
   | RecordMsg of Record.msg
 [@@bs.deriving {accessors}]
 
-type model = {
+type model = { 
+    (* prevRoute: route option; *)
     route: route;
     nextPage: page;
     searchModel: Search.model;
