@@ -411,11 +411,18 @@ let view model context =
                 ]
             ]
         ]
-    ; div []
-        [ results ~results:model.results ~model ~context ] 
-    ; (Facet.view
-         ~model: model.facetModel
-         ~context: context
-         ~filters:model.searchParams.filters |> App.map facetMsg)
+    ; (if hasResults model.results then
+         begin
+           div []
+             [
+               results ~results:model.results ~model ~context
+             ; (Facet.view
+                  ~model: model.facetModel
+                  ~context: context
+                  ~filters:model.searchParams.filters |> App.map facetMsg)
+             ]
+         end
+      else
+        noNode)
     ]
 
