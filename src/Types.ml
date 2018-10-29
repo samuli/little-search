@@ -39,10 +39,17 @@ let finnaLanguageCode lng =
   | LngEn -> "en-gb"
        
           
+             
+type route =
+  | MainRoute
+  | SearchRoute of searchParams
+  | RecordRoute of recordId
+
 type context = {
     language: language; 
     translations: string Js.Dict.t remoteData;
     recordIds: string list;
+    prevRoute: route option;
   }
 
 type contextUpdate =
@@ -50,12 +57,6 @@ type contextUpdate =
   | UpdateTranslations of string Js.Dict.t remoteData
   | UpdateRecordIds of string list
 [@@bs.deriving {accessors}]
-             
-type route =
-  | MainRoute
-  | SearchRoute of searchParams
-  | RecordRoute of recordId
-
 
 type page =
   | PageReady of route

@@ -69,8 +69,35 @@ let fromStorage k default =
   match (getItem k ls) with
   | Some data -> data
   | _ -> default
-  
+
+let scrollToElement id =
+  let rec act id =
+    let el = Web.Document.getElementById id in
+    match Js.Nullable.toOption el with
+    | None ->
+       let _ = Web.Window.requestAnimationFrame (fun _ -> act id) in
+       ()
+    | Some _ ->
+       [%bs.raw "window.scrollTo(0, document.getElementById(id).offsetTop)" ]
+  in
+  act id
+    
 let resetPageScroll _ =
   [%bs.raw
       {| document.documentElement.scrollTop = 0 |}
-  ];
+  ]
+
+let hash: (string -> string ) = [%bs.raw fun s -> "
+  return s.split(\"\").reduce(
+     function(a,b){
+       a=((a<<5)-a)+b.charCodeAt(0);
+       return a&a
+     },
+   0);
+"]
+
+                                      
+
+
+    
+

@@ -14,7 +14,6 @@ type msg =
 [@@bs.deriving {accessors}]
 
 type model = { 
-    (* prevRoute: route option; *)
     route: route;
     nextPage: page;
     searchModel: Search.model;
@@ -25,7 +24,8 @@ type model = {
 let initContext ~language = {
     language;
     translations = Loading;
-    recordIds = []
+    recordIds = [];
+    prevRoute = None;
   }
   
 let init () location =
@@ -79,19 +79,32 @@ let update model = function
   | SearchMsg subMsg ->
      begin match subMsg with
      | Search.PageLoaded ->
+        (* scroll to record if returning to results *)
+        (match model.context.prevRoute with
+         | Some route ->
+            begin 
+              match route with
+              | RecordRoute id ->
+                 let id = (Util.hash id) in
+                 Util.scrollToElement id;
+              | _ -> ()
+            end
+        | _ -> ()
+        );
         let route = pageToRoute model.nextPage in
         ( { model with route; nextPage = PageReady route }, Cmd.none )
      | _ ->
         let (searchModel, cmd, contextCmd) =
           Search.update model.searchModel model.context subMsg
         in
-        let context = updateContext contextCmd model.context in
-       ( {model with searchModel; context}, (Cmd.map searchMsg cmd) )
+        let context = (updateContext contextCmd model.context) in
+       ( { model with searchModel; context }, (Cmd.map searchMsg cmd) )
      end
   | RecordMsg subMsg ->
      begin match subMsg with
      | Record.PageLoaded ->
         let _ = Util.resetPageScroll () in
+
         let route = pageToRoute model.nextPage in
         ( { model with route; nextPage = PageReady route }, Cmd.none )
      | _ ->
@@ -112,7 +125,8 @@ let update model = function
           ((PageLoading (RecordRoute id)),
            Cmd.map recordMsg (Cmd.msg (Record.showRecord id)))
        end in
-     ( { model with nextPage }, cmd )
+     let context = { model.context with prevRoute = Some model.route } in
+     ( { model with context; nextPage }, cmd )
 
 let languageMenu context =
   let item ~lng ~currentLng =

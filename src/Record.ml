@@ -77,15 +77,8 @@ let images recId imgs =
         li [] [ img attrs [] ]
       in
       (* hash record.id to get a working querySelector for inView.js *)
-      let hash =
-        [%raw {| 
-               function(s) {
-               return s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);
-               return a&a},0);
-               }|}]
-      in
       let imgId i =
-        let id = hash recId in
+        let id = (Util.hash recId) in
         "img-" ^ id ^ "-" ^ (string_of_int i)
       in
       

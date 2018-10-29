@@ -254,7 +254,6 @@ let update model context = function
   | GotFacets (Error _e) ->
      ( model, Cmd.none, NoUpdate )
 
-     
 let renderResultItem visitedRecords r =
   let visited =
     begin try
@@ -267,7 +266,7 @@ let renderResultItem visitedRecords r =
     end in
   a [ href (Router.routeToUrl (RecordRoute r.id))        
     ]
-    [ li [ id r.id;
+    [ li [ id (Util.hash r.id);
            class' (Style.recordListBkg ~visited) ]
         [
           Record.authors r.authors
