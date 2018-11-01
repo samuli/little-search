@@ -12,8 +12,8 @@ type msg =
 
 type facet = {
     key: string;
-    type': Finna.facetType;
-    items: Finna.facetItem array remoteData;
+    type': Types.facetType;
+    items: Types.facetItem array remoteData;
     lookfor: string;
     opened: bool;
   } 
@@ -27,9 +27,9 @@ type model = {
 
 let initFacets lookfor =
   let keys = [
-      (Finna.FacetBoolean, "online_boolean");
-      (Finna.FacetNormal, "format");
-      (Finna.FacetNormal, "building")
+      (Types.FacetBoolean, "online_boolean");
+      (Types.FacetNormal, "format");
+      (Types.FacetNormal, "building")
     ] in
   let facets = Js.Dict.empty() in
   List.iter (fun (type', key) ->
@@ -118,7 +118,7 @@ let isFacetActive ~filters ~facetKey ~facetValue =
     filters
   
 let facetList ~facets ~filters ~context =
-  let renderFacetItem ~key ~(item:Finna.facetItem) ~filters =
+  let renderFacetItem ~key ~(item:Types.facetItem) ~filters =
     let isActive =
       isFacetActive ~filters ~facetKey:key ~facetValue:item.value
     in

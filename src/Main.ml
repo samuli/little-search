@@ -1,10 +1,12 @@
+[%%debugger.chrome]
+ 
 open Tea
 open App
 open Tea.Html
 open Types
  
 let _ = Style.init
-
+ 
 type msg =
   | ChangeLanguage of language
   | GotTranslations of (string, string Http.error) Result.t
@@ -21,11 +23,12 @@ type model = {
     context: Types.context;
 }
 
-let initContext ~language = {
+let initContext ~language ~limit = {
     language;
     translations = Loading;
-    recordIds = [];
+    (* recordIds = []; *)
     prevRoute = None;
+    pagination = { count = 0; items = []; limit};
   }
   
 let init () location =
@@ -33,7 +36,7 @@ let init () location =
     Util.fromStorage "language" (Types.languageCode LngFi)
     |> Types.languageOfCode
   in
-  let context = initContext ~language in
+  let context = initContext ~language ~limit:0 in
   let route = Router.urlToRoute location in
   let translationsCmd =
     Util.loadTranslations (Types.languageCode context.language) gotTranslations in
@@ -56,7 +59,8 @@ let pageToRoute page =
 let updateContext cmd context =
   match cmd with
   | UpdateTranslations translations -> { context with translations }
-  | UpdateRecordIds recordIds -> { context with recordIds }
+  (* | UpdateRecordIds recordIds -> { context with recordIds } *)
+  | UpdatePagination pagination -> { context with pagination }
   | NoUpdate -> context
        
 let update model = function
@@ -97,7 +101,7 @@ let update model = function
         let (searchModel, cmd, contextCmd) =
           Search.update model.searchModel model.context subMsg
         in
-        let context = (updateContext contextCmd model.context) in
+        let context = updateContext contextCmd model.context in
        ( { model with searchModel; context }, (Cmd.map searchMsg cmd) )
      end
   | RecordMsg subMsg ->
@@ -109,7 +113,7 @@ let update model = function
         ( { model with route; nextPage = PageReady route }, Cmd.none )
      | _ ->
         let (recordModel, cmd) =
-          (Record.update model.recordModel model.context subMsg)
+          (Record.update ~model:model.recordModel ~context:model.context subMsg)
         in
        ( {model with recordModel}, (Cmd.map recordMsg cmd) )
      end
@@ -172,7 +176,10 @@ let view model =
                      |> map searchMsg
                    ]
               | RecordRoute _recordId ->
-                 Record.view model.recordModel model.context
+                 Record.view
+                   ~model:model.recordModel
+                   ~context:model.context
+                   ~results:model.searchModel.results
                  |> map recordMsg
             ]
         ]

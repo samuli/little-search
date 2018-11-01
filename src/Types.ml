@@ -8,9 +8,8 @@ type searchParams = {
     filters: searchParam list;
     page: int;
     limit: int;
-    (* record: recordId option; *)
   }
-
+                  
 type 't remoteData =
   | NotAsked
   | NotAskedType of 't
@@ -22,7 +21,7 @@ type 't remoteData =
 type language =
   | LngFi
   | LngEn
-
+  
 let languageCode lng =
   match lng with
   | LngFi -> "fi"
@@ -37,8 +36,75 @@ let finnaLanguageCode lng =
   match lng with
   | LngFi -> "fi"
   | LngEn -> "en-gb"
-       
-          
+
+            
+type onlineUrl = {
+  url: string option;
+  label: string option;
+}
+
+type facetType = | FacetNormal | FacetBoolean
+                 
+type facetItem = {
+    value: string;
+    translated: string;
+    count: int
+  }
+
+type translated = {
+  value: string;
+  translated: string
+  }
+                
+type record = {
+  id: string;
+  title: string option;
+  formats: translated array option;
+  images: string array option;
+  authors: string array option;
+  buildings: translated array option;
+  publishers: string array option;
+  year: string option;
+  onlineUrls: onlineUrl array option;
+  urls: onlineUrl array option;
+  summary: string array option;
+  }
+
+type searchResult = {
+  records: record array;
+  resultCount: int;
+  }
+
+type searchResultPageType = {
+    page: int;
+    results: searchResult remoteData;
+  }
+type searchResultsType = {
+    count: int;
+    pageCount: int;
+    pages: searchResultPageType Js.Dict.t;
+  }
+                       
+type paginationCmd =
+  | PaginateNoCmd
+  | PaginateRecordCmd of recordId
+  | PaginatePrevCmd of (int * recordId)
+  | PaginateNextCmd of (int * recordId)
+[@@bs.deriving {accessors}]
+
+type paginationItem = {
+    id: recordId;
+    next: paginationCmd;
+    prev: paginationCmd;
+    pageNum: int;
+    ind: int;
+}
+
+type pagination = {
+    items: paginationItem list;
+    count: int;
+    limit: int;
+}
              
 type route =
   | MainRoute
@@ -48,30 +114,20 @@ type route =
 type context = {
     language: language; 
     translations: string Js.Dict.t remoteData;
-    recordIds: string list;
     prevRoute: route option;
+    pagination: pagination
   }
 
 type contextUpdate =
   | NoUpdate
   | UpdateTranslations of string Js.Dict.t remoteData
-  | UpdateRecordIds of string list
+  | UpdatePagination of pagination
 [@@bs.deriving {accessors}]
 
+               
 type page =
   | PageReady of route
   | PageLoading of route
 
-(* type filterType = {
- *     key: string;
- *     value: string
- *   } *)
-
-(* type searchParamsType = {
- *     lookfor: string;
- *     limit: int;
- *     page: int;
- *     filters: searchParam array;
- *   } *)
 
                           

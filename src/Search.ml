@@ -1,5 +1,6 @@
+[%%debugger.chrome]
+
 open Types
-open Finna
 
 open View
    
@@ -20,21 +21,12 @@ type msg =
 [@@bs.deriving {accessors}]
 
 
-type searchResultPageType = {
-    page: int;
-    results: Finna.searchResult remoteData;
-  }
-type searchResultsType = {
-    count: int;
-    pageCount: int;
-    pages: searchResultPageType Js.Dict.t;
-  }
 type model = {
     searchParams: Types.searchParams;
     results: searchResultsType;
     lastSearch: string option;
     nextResult: searchResultPageType remoteData;
-    visitedRecords: Finna.record array;
+    visitedRecords: Types.record array;
     facetsOpen: bool;
     facetModel: Facet.model
   }
@@ -72,7 +64,7 @@ let getSearchCmd ~(params:Types.searchParams) ~lng =
   let url = Finna.getSearchUrl ~params ~lng in
   getHttpCmd gotResults url
   
-let appendResults ~model ~newResults =
+let appendResults ~model ~(newResults:Types.searchResult remoteData) =
   let page = match model.nextResult with
     | LoadingType page -> page.page
     | _ -> model.searchParams.page
@@ -143,7 +135,7 @@ let toggleFilter ~model ~filterKey ~filterVal ~mode =
                            nextResult = Loading }
   in
   (cmd, model)
-  
+
 let update model context = function
   | OnSearch ->
      let searchParams = { model.searchParams with page = 0 } in
@@ -182,9 +174,7 @@ let update model context = function
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in
      let model = appendResults ~model ~newResults: result in
-     let recIds = [] in
-     
-     ( model, Cmd.msg pageLoaded, UpdateRecordIds recIds )
+     ( model, Cmd.msg pageLoaded, NoUpdate )
   | GotResults (Error e) ->
      let result = Error (Http.string_of_error e) in
      let model = appendResults ~model ~newResults: result in
@@ -240,7 +230,7 @@ let update model context = function
        | Success (key, items) ->
           let newTranslations =
             Array.map
-              (fun (f:Finna.facetItem) -> (f.value, f.translated))
+              (fun (f:Types.facetItem) -> (f.value, f.translated))
               items
           in
           Util.updateTranslations translations newTranslations;
@@ -254,11 +244,11 @@ let update model context = function
   | GotFacets (Error _e) ->
      ( model, Cmd.none, NoUpdate )
 
-let renderResultItem visitedRecords r =
+let renderResultItem ~visitedRecords ~(r:Types.record) =
   let visited =
     begin try
         let _el =
-          List.find (fun el -> el.id = r.id)
+          List.find (fun (el:Types.record) -> el.id = r.id)
             (Array.to_list visitedRecords)
         in
         true
@@ -306,11 +296,10 @@ let resultPageLoadNeighbor ~pageNum ~(resultPages:searchResultPageType Js.Dict.t
        ]
   | _ -> noNode
   
-let renderResultPage pageNum searchResult (model:model) context =
+let renderResultPage pageNum (searchResult:Types.searchResult) (model:model) context =
   let records = searchResult.records in
   let items =
-    Array.map
-      (renderResultItem model.visitedRecords)
+    Array.map (fun r -> renderResultItem ~r ~visitedRecords:model.visitedRecords)
       records
     |> Array.to_list
   in
@@ -341,6 +330,7 @@ let resultPage ~(page:searchResultPageType) ~model ~context =
       | (Success res, pageNum) -> renderResultPage pageNum res model context
       | _ -> Html.noNode
 
+  
 let results ~results ~model ~context =
   let pageNums = Js.Dict.keys results.pages in
   Array.sort (fun a b ->
@@ -362,7 +352,7 @@ let results ~results ~model ~context =
          |> Array.to_list)
     ]
   
-let hasResults results =
+let hasResults (results:Types.searchResultsType) =
   if results.count > 0 then true else false
 
 let filters filters context =

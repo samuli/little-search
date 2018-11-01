@@ -6,14 +6,15 @@ open Tea.Html
 
 type msg =
   | ShowRecord of string
+  | RecordPaginate of (recordId * int)
   | GotResult of (string, string Http.error) Result.t
   | CloseRecord
   | PageLoaded
 [@@bs.deriving {accessors}]
 
 type model = {
-    record: Finna.record remoteData;
-    nextRecord: Finna.record remoteData;
+    record: Types.record remoteData;
+    nextRecord: Types.record remoteData;
   }
 
 let init =
@@ -22,34 +23,7 @@ let init =
     nextRecord = NotAsked;
   }
 
-let recordNeighbors id ids =
-  let rec find id ids cnt =
-    match ids with
-    | [] -> None
-    | hd :: rest ->
-       if hd = id then Some cnt else find id rest (cnt+1)
-  in
-  let (prev, next, ind) = match find id ids 0 with
-  | None -> (None, None, 0)
-  | Some ind -> begin
-     let ids = Array.of_list ids in
-     let len = Js.Array.length ids in
-     let prev = match ind with
-       | 0 -> None
-       | _ -> Some ids.(ind-1)
-     in
-     let next = match (len, ind, len-ind) with
-       | (a, b, _) when a = b -> None
-       | (_a, b, c) when c > 1 ->
-          let ind = b+1 in Some ids.(ind)
-       | _ -> None
-     in
-     (prev, next, ind)
-    end
-  in
-  (prev,next, ind, List.length ids)
-  
-let update model context = function
+let update ~model ~context = function
   | ShowRecord id ->
      let url =
        Finna.getRecordUrl ~id ~lng:(Types.finnaLanguageCode context.language)
@@ -61,7 +35,13 @@ let update model context = function
      ( { model with record }, Cmd.msg pageLoaded )
   | GotResult (Error e) ->
      ( { model with record = Error (Http.string_of_error e) }, Cmd.msg pageLoaded )
-  |_ -> (model, Cmd.none)
+  | _ -> (model, Cmd.none )
+  (* | RecordPaginate (id, page) ->
+   *    let cmds = [
+   *        (Cmd.msg (Search.searchMore page))
+   *      ; ShowRecord id
+   *      ] in
+   *    (model, Cmd.batch cmds) *)
 
 let images recId imgs =
   (match imgs with
@@ -97,7 +77,7 @@ let images recId imgs =
 let getFormats formats =
   match formats with
   | Some formats when Array.length formats > 0 ->
-     let format:Finna.translated = formats.((Array.length formats)-1) in
+     let format:Types.translated = formats.((Array.length formats)-1) in
      Some format.translated
   | _ -> None
        
@@ -110,7 +90,7 @@ let formats formats =
 let getBuildings buildings =
   match buildings with
   | Some buildings when Array.length buildings > 0 ->
-     let building:Finna.translated = buildings.(0) in
+     let building:Types.translated = buildings.(0) in
      Some building.translated
   | _ -> None
        
@@ -132,7 +112,7 @@ let authors authors =
      p [ class' Style.recordAuthors] [ text authors ]
   | None -> noNode
 
-let getPublishInfo (r:Finna.record) =
+let getPublishInfo (r:Types.record) =
   match (r.publishers, r.year) with
     | (Some publishers, Some year) when Array.length publishers > 0 ->
        Some (Printf.sprintf "%s %s" publishers.(0) year)
@@ -158,7 +138,7 @@ let summary summary =
      p [ class' Style.recordSummary ] [ text summary ]
   | None -> noNode
           
-let urlList (r:Finna.record) =
+let urlList (r:Types.record) =
   let urls =
     (match r.urls with
      | Some urls when Array.length urls > 0 -> urls |> Array.to_list
@@ -167,7 +147,7 @@ let urlList (r:Finna.record) =
        | Some urls when Array.length urls > 0 -> urls |> Array.to_list
        | _ -> [])
   in
-  ul [ class' Style.recordLinks ] (List.map (fun (url:Finna.onlineUrl) ->
+  ul [ class' Style.recordLinks ] (List.map (fun (url:Types.onlineUrl) ->
       match (url.label, url.url) with
       | (Some label, Some url) -> li [ class' Style.recordLink ] [ a [ href url ] [ text label ] ]
       | (None, Some url) -> li [ class' Style.recordLink ] [ a [ href url ] [ text url ] ]
@@ -177,29 +157,41 @@ let finnaLink id context =
   p [] [ a [ href (Finna.getRecordLink id) ]
            [ text (Util.trans "View in Finna" context.translations) ] ]
 
-let recordNavigation (record:Finna.record) context =
-  let (prevId, nextId, ind, totCnt) = recordNeighbors record.id context.recordIds in
+let recordNavigation ~(record:Types.record) ~results ~context =
+  let pagination =
+    Pagination.paginateRecord ~id:record.id ~results ~limit:3
+  in
+  Js.log pagination;
+  match pagination with
+  | None -> noNode
+  | Some pagination -> begin
+      let totCnt = results.count in
+      div [ ] [
+          (match pagination.prev with
+           | PaginateRecordCmd id ->
+              a
+                [ href (Router.routeToUrl (RecordRoute id)) ]
+                [ text (Util.trans "Previous" context.translations) ]
+           | PaginatePrevCmd (page, _id) ->
+              p [] [ text (Printf.sprintf "load page %d" page) ]
+           | _j -> noNode )
+        ; (if totCnt > 0 then
+             p [] [ text (Printf.sprintf "%d / %d" (pagination.ind+1) totCnt) ]
+           else
+             noNode)
+        ; (match pagination.next with
+           | PaginateRecordCmd id ->
+              a
+                [ href (Router.routeToUrl (RecordRoute id)) ]
+                [ text (Util.trans "Next" context.translations) ]
+           | PaginateNextCmd (page, _id) ->
+              p [] [ text (Printf.sprintf "load page %d" page) ]
+           | _ -> noNode ) ]
+    end
+                     
+let viewRecord ~(r:Types.record) ~context ~results =
   div [ ] [
-      (match prevId with
-       | Some id ->
-          a
-            [ href (Router.routeToUrl (RecordRoute id)) ]
-            [ text (Util.trans "Previous" context.translations) ]
-       | None -> noNode )
-    ; (if totCnt > 0 then
-         p [] [ text (Printf.sprintf "%d / %d" (ind+1) totCnt) ]
-       else
-         noNode)
-    ; (match nextId with
-       | Some id ->
-          a
-            [ href (Router.routeToUrl (RecordRoute id)) ]
-            [ text (Util.trans "Next" context.translations) ]
-       | None -> noNode ) ]
-  
-let viewRecord (r:Finna.record) context =
-  div [ ] [
-      (recordNavigation r context)
+      (recordNavigation ~record:r ~results ~context)
     ; (match r.title with
        | Some title when title <> "" -> h1 [] [ text title ]
        | _ -> noNode)
@@ -215,13 +207,13 @@ let viewRecord (r:Finna.record) context =
     ; finnaLink r.id context
     ]
   
-let view model context =
+let view ~model ~context ~results =
   div
     [ class' Style.recordFull ]
     [
       match model.record with
       | Loading -> statusLoading ()
       | Error e -> statusError e
-      | Success r -> viewRecord r context
+      | Success r -> viewRecord ~r ~context ~results
       | _ -> Html.noNode
     ]

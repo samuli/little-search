@@ -1,49 +1,11 @@
 open Types
 
-            
-type onlineUrl = {
-  url: string option;
-  label: string option;
-}
-
-type facetType = | FacetNormal | FacetBoolean
-                 
-type facetItem = {
-    value: string;
-    translated: string;
-    count: int
-  }
-
-type translated = {
-  value: string;
-  translated: string
-  }
-                
-type record = {
-  id: string;
-  title: string option;
-  formats: translated array option;
-  images: string array option;
-  authors: string array option;
-  buildings: translated array option;
-  publishers: string array option;
-  year: string option;
-  onlineUrls: onlineUrl array option;
-  urls: onlineUrl array option;
-  summary: string array option;
-  }
 
 type searchResultRaw = {
   records: record array option;
   resultCount: int option;
   status: string;    
   }
-                     
-type searchResult = {
-  records: record array;
-  resultCount: int;
-  }
-
 
 type facetResultRaw = {
   facets: facetItem array Js.Dict.t option;
