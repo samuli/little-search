@@ -38,7 +38,8 @@ let init () location =
   let context = initContext ~language ~limit:0 in
   let route = Router.urlToRoute location in
   let translationsCmd =
-    Util.loadTranslations (Types.languageCode context.language) gotTranslations
+    Util.loadTranslations
+      (Types.languageCode context.language) gotTranslations
   in
   let urlChangeCmd = Cmd.msg (urlChanged location) in
   ({ route;
@@ -91,7 +92,9 @@ let handleOutMsg ~outMsg ~model =
      ( { model with context = { context with pagination } }, Cmd.none)
   | LoadResultsInBackground (page) ->
      let (searchModel, cmd, _) =
-       Search.update model.searchModel model.context (Search.searchMore (page, true)) in
+       Search.update
+         model.searchModel model.context (Search.searchMore (page, true))
+     in
      let cmd = Cmd.map searchMsg cmd in
      ( { model with searchModel }, cmd )
   | GotResultsInBackground ->

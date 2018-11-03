@@ -203,7 +203,6 @@ let recordNavigation ~(record:Types.record) ~results ~context ~limit =
       ~results
       ~limit
   in
-  Js.log pagination;
   match pagination with
   | None -> noNode
   | Some pagination -> begin

@@ -13,8 +13,6 @@ type msg =
   | SearchMore of (int * bool)
   | OnChange of string
   | GotResults of (string, string Http.error) Result.t
-  | SendResultsCb of contextUpdate
-  (* | PageLoaded *)
   | RemoveFilter of (string)
   | OpenFacets
   | FacetMsg of Facet.msg
@@ -143,13 +141,19 @@ let toggleFilter ~model ~filterKey ~filterVal ~mode =
   in
   (cmd, model)
 
+let resultsCallback ~inBkg ~searchParams =
+  if inBkg then
+    GotResultsInBackground
+  else
+    (PageLoaded (SearchRoute searchParams))
+    
 let update model context = function
   | OnSearch ->
      let searchParams = { model.searchParams with page = 0 } in
      ( { model with
          lastSearch = None;
          searchParams;
-         onResults = (PageLoaded (SearchRoute searchParams))
+         onResults = (resultsCallback ~inBkg:false ~searchParams)
        },
        Router.openUrl (Router.routeToUrl (SearchRoute searchParams)),
        NoUpdate
@@ -161,17 +165,19 @@ let update model context = function
        | Some query -> not (query == params.lookfor) in
      let page = params.page in
      let nextResult = { page; results = Loading } in
-     let results = if newSearch then
-                     initResults ()
-                   else
-                     let pages = model.results.pages in
-                     Js.Dict.set pages (string_of_int page) nextResult;
-                     { model.results with pages }
+     let (results, onResults) =
+       if newSearch then
+         (initResults (), (resultsCallback ~inBkg:false ~searchParams:params))
+       else
+         let pages = model.results.pages in
+         Js.Dict.set pages (string_of_int page) nextResult;
+         ( { model.results with pages }, model.onResults )
      in
      let nextResult = LoadingType nextResult in
      let model =
        { model with results;
                     nextResult;
+                    onResults;
                     searchParams = params; }
      in
      let cmd = getSearchCmd ~params ~lng:context.language in
@@ -181,11 +187,11 @@ let update model context = function
      let searchParams =
        { model.searchParams with page } in
      let (cmd, onResults) =
+       let cb = resultsCallback ~inBkg:searchInBkg ~searchParams in
        if searchInBkg then
-         (Cmd.msg (Search searchParams), GotResultsInBackground)
+         (Cmd.msg (Search searchParams), cb)
        else
-         ( Router.openUrl (Router.routeToUrl (SearchRoute searchParams)),
-           (PageLoaded (SearchRoute model.searchParams)) )
+         ( Router.openUrl (Router.routeToUrl (SearchRoute searchParams)), cb)
      in
      ( { model with searchParams; nextResult; onResults }, cmd, NoUpdate )
   | OnChange lookfor ->
@@ -194,12 +200,15 @@ let update model context = function
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in
      let model = appendResults ~model ~newResults: result in
-     ( model, Cmd.none, model.onResults )
+     let onResults =
+       resultsCallback ~inBkg:false ~searchParams:model.searchParams in
+     ( { model with onResults }, Cmd.none, model.onResults )
   | GotResults (Error e) ->
      let result = Error (Http.string_of_error e) in
      let model = appendResults ~model ~newResults: result in
-     ( model, Cmd.none, model.onResults )
-  | SendResultsCb cmd -> (model, Cmd.none, cmd) (* callback when results loaded *)
+     let onResults =
+       resultsCallback ~inBkg:false ~searchParams:model.searchParams in
+     ( { model with onResults }, Cmd.none, model.onResults )
   | OpenFacets -> ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets), NoUpdate )
   | RemoveFilter filterKey ->
      let (cmd, model) =
@@ -300,7 +309,8 @@ let isPageLoading ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) =
     end
   | _ -> NotAsked
   
-let resultPageLoadNeighbor ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) ~context =
+let resultPageLoadNeighbor
+      ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) ~context =
   match isPageLoading ~pageNum ~resultPages with
   | Loading ->
      div
@@ -308,7 +318,9 @@ let resultPageLoadNeighbor ~pageNum ~(resultPages:searchResultPageType Js.Dict.t
        [ p [] [ text (Util.trans "Loading..." context.translations)] ]
   | NotAsked ->
     div
-       [ class' (Style.nextPage ~loading:true); onClick (SearchMore (pageNum, false)) ]
+      [ class' (Style.nextPage ~loading:true)
+      ; onClick (SearchMore (pageNum, false))
+      ]
        [ text
            (Printf.sprintf "%s %d"
               (Util.trans "Page" context.translations)
@@ -316,10 +328,12 @@ let resultPageLoadNeighbor ~pageNum ~(resultPages:searchResultPageType Js.Dict.t
        ]
   | _ -> noNode
   
-let renderResultPage pageNum (searchResult:Types.searchResult) (model:model) context =
+let renderResultPage
+      pageNum (searchResult:Types.searchResult) (model:model) context =
   let records = searchResult.records in
   let items =
-    Array.map (fun r -> renderResultItem ~r ~visitedRecords:model.visitedRecords)
+    Array.map
+      (fun r -> renderResultItem ~r ~visitedRecords:model.visitedRecords)
       records
     |> Array.to_list
   in
