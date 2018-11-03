@@ -130,7 +130,7 @@ let toggleFilter ~model ~filterKey ~filterVal ~mode =
       |> Array.of_list
   in
   let searchParams =
-    { model.searchParams with filters = Array.to_list filters }
+    { model.searchParams with filters = Array.to_list filters; page = 0 }
   in
   let cmd = Router.openUrl (Router.routeToUrl (SearchRoute searchParams)) in
   let model = { model with searchParams;
@@ -180,6 +180,7 @@ let update model context = function
      in
      let cmd = getSearchCmd ~params ~lng:context.language in
      ( model, cmd, [NoUpdate] )
+
   | SearchMore (page, searchInBkg) ->
      let nextResult = (LoadingType { page; results = Loading }) in
      let searchParams =
@@ -192,6 +193,7 @@ let update model context = function
          ( Router.openUrl (Router.routeToUrl (SearchRoute searchParams)), cb)
      in
      ( { model with searchParams; nextResult; onResults }, cmd, [NoUpdate] )
+
   | OnChange lookfor ->
      let searchParams = { model.searchParams with lookfor } in
      ( { model with searchParams } , (Cmd.none), [NoUpdate] )
@@ -207,8 +209,10 @@ let update model context = function
      let onResults =
        resultsCallback ~inBkg:false ~searchParams:model.searchParams in
      ( { model with onResults }, Cmd.none, [model.onResults] )
+
   | OpenFacets ->
      ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets), [NoUpdate] )
+
   | RemoveFilter filterKey ->
      let (cmd, model) =
        toggleFilter ~model ~filterKey ~filterVal:"" ~mode:false
@@ -253,6 +257,7 @@ let update model context = function
        | _ ->
           ( {model with facetModel}, (Cmd.map facetMsg subCmd), [NoUpdate] )
      end
+
   | GotFacets (Ok data) ->
      let translations = context.translations in
      let facets = match Finna.decodeFacetResults data with
@@ -270,6 +275,7 @@ let update model context = function
      ( { model with facetModel = { model.facetModel with facets} },
        Cmd.none,
        [(UpdateTranslations translations)] )
+
   | GotFacets (Error _e) ->
      ( model, Cmd.none, [NoUpdate] )
 

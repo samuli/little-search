@@ -68,6 +68,7 @@ type record = {
   onlineUrls: onlineUrl array option;
   urls: onlineUrl array option;
   summary: string array option;
+  languages: string array option;
   }
 
 type searchResult = {

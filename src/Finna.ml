@@ -22,7 +22,7 @@ let getRecordLink id =
   Printf.sprintf "https://finna.fi/Record/%s" id
      
 let getFieldQuery _fields =
-  let fields = ["id"; "title"; "formats"; "images"; "authors"; "buildings"; "publishers"; "year"; "urls"; "onlineUrls"; "summary"] in
+  let fields = ["id"; "title"; "formats"; "images"; "authors"; "buildings"; "publishers"; "year"; "urls"; "onlineUrls"; "summary"; "languages"] in
   List.map (fun f -> "&field[]=" ^ f) fields |> String.concat ""
 
 let getFilterQuery filters =
@@ -89,6 +89,7 @@ let recordDecoder json =
     onlineUrls = json |> (optional (field "onlineUrls" (array urlDecoder)));
     urls = json |> (optional (field "urls" (array urlDecoder)));
     summary = json |> (optional (field "summary" (array string)));
+    languages = json |> (optional (field "languages" (array string)));
   }
   
 let decodeSearchResults json : searchResult remoteData =

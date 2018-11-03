@@ -2,7 +2,8 @@
     "online_boolean": "Saatavilla verkossa",
     "format": "Aineistotyyppi",
     "building": "Organisaatio",
-
+    "language": "Kieli",
+    
     "Loading...": "Odota hetki...",
     "Narrow search": "Rajaa hakua",
     "Next": "Seuraava",

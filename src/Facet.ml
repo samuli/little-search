@@ -29,7 +29,8 @@ let initFacets lookfor =
   let keys = [
       (Types.FacetBoolean, "online_boolean");
       (Types.FacetNormal, "format");
-      (Types.FacetNormal, "building")
+      (Types.FacetNormal, "building");
+      (Types.FacetNormal, "language")
     ] in
   let facets = Js.Dict.empty() in
   List.iter (fun (type', key) ->
