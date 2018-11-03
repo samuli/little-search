@@ -56,12 +56,54 @@ let pageToRoute page =
   match page with
   | PageLoading route | PageReady route -> route
 
-let updateContext cmd context =
-  match cmd with
-  | UpdateTranslations translations -> { context with translations }
-  (* | UpdateRecordIds recordIds -> { context with recordIds } *)
-  | UpdatePagination pagination -> { context with pagination }
-  | NoUpdate -> context
+let handlePageLoaded ~route ~model =
+  let _ = match route with
+  | SearchRoute _params ->
+     (match model.context.prevRoute with
+      | Some route ->
+         begin 
+           match route with
+           | RecordRoute id ->
+              let id = (Util.hash id) in
+              Util.scrollToElement id;
+           | _ -> ()
+         end
+      | _ -> ()
+     );
+  | RecordRoute _id ->
+     Util.resetPageScroll ()
+  | _ -> ()
+  in
+  let route = pageToRoute model.nextPage in
+  { model with route; nextPage = PageReady route }
+    
+let handleOutMsg ~outMsg ~model =
+  let context = model.context in
+  
+  match outMsg with
+  | PageLoaded route ->
+     let model = handlePageLoaded ~route ~model in
+     (model, Cmd.none)
+  | UpdateTranslations translations ->
+     let context = { context with translations } in
+     ( { model with context }, Cmd.none)
+  | UpdatePagination pagination -> 
+     ( { model with context = { context with pagination } }, Cmd.none)
+  | LoadResultsInBackground (page) ->
+     let (searchModel, cmd, _) =
+       Search.update model.searchModel model.context (Search.searchMore (page, true)) in
+     let cmd = Cmd.map searchMsg cmd in
+     ( { model with searchModel }, cmd )
+  | GotResultsInBackground ->
+     let (_recordModel, cmd, _) =
+       Record.update
+         ~model:model.recordModel
+         ~context:model.context
+         ~results:model.searchModel.results
+         (Record.recordPaginated)
+     in
+     (model, (Cmd.map recordMsg cmd) )
+  | NoUpdate -> (model, Cmd.none)
        
 let update model = function
   | ChangeLanguage language ->
@@ -72,51 +114,31 @@ let update model = function
   | GotTranslations (Ok data) ->
      Util.toStorage "language" (Types.languageCode model.context.language);
      let translations = Util.decodeTranslations data in
-     let context =
-       updateContext (UpdateTranslations translations) model.context
-     in
-     ( { model with context }, Cmd.none )
+     let (model, cmd) = handleOutMsg ~outMsg:(UpdateTranslations translations) ~model in
+     (model, cmd)
   | GotTranslations (Error e) ->
      let translations = Error (Http.string_of_error e) in
      let context = { model.context with translations } in
      ( { model with context }, Cmd.none )
   | SearchMsg subMsg ->
-     begin match subMsg with
-     | Search.PageLoaded ->
-        (* scroll to record if returning to results *)
-        (match model.context.prevRoute with
-         | Some route ->
-            begin 
-              match route with
-              | RecordRoute id ->
-                 let id = (Util.hash id) in
-                 Util.scrollToElement id;
-              | _ -> ()
-            end
-        | _ -> ()
-        );
-        let route = pageToRoute model.nextPage in
-        ( { model with route; nextPage = PageReady route }, Cmd.none )
-     | _ ->
-        let (searchModel, cmd, contextCmd) =
-          Search.update model.searchModel model.context subMsg
-        in
-        let context = updateContext contextCmd model.context in
-       ( { model with searchModel; context }, (Cmd.map searchMsg cmd) )
-     end
+     let (searchModel, cmd, outMsg) =
+       Search.update model.searchModel model.context subMsg
+     in
+     let cmd = Cmd.map searchMsg cmd in
+     let model = { model with searchModel } in
+     let (model, outCmd) = handleOutMsg ~outMsg ~model in
+     ( model, Cmd.batch [cmd; outCmd] )     
   | RecordMsg subMsg ->
-     begin match subMsg with
-     | Record.PageLoaded ->
-        let _ = Util.resetPageScroll () in
-
-        let route = pageToRoute model.nextPage in
-        ( { model with route; nextPage = PageReady route }, Cmd.none )
-     | _ ->
-        let (recordModel, cmd) =
-          (Record.update ~model:model.recordModel ~context:model.context subMsg)
-        in
-       ( {model with recordModel}, (Cmd.map recordMsg cmd) )
-     end
+     let (recordModel, cmd, outMsg) =
+       (Record.update
+          ~model:model.recordModel
+          ~context:model.context
+          ~results:model.searchModel.results subMsg)
+     in
+     let cmd = Cmd.map recordMsg cmd in
+     let model = { model with recordModel } in
+     let (model, outCmd) = handleOutMsg ~outMsg ~model in
+     ( model, Cmd.batch [cmd; outCmd] )
   | UrlChanged location ->
      let route = Router.urlToRoute location in
      let (nextPage, cmd) =

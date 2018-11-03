@@ -10,10 +10,11 @@ open Tea.Html
 type msg =
   | OnSearch
   | Search of Types.searchParams
-  | SearchMore of int
+  | SearchMore of (int * bool)
   | OnChange of string
   | GotResults of (string, string Http.error) Result.t
-  | PageLoaded
+  | SendResultsCb of contextUpdate
+  (* | PageLoaded *)
   | RemoveFilter of (string)
   | OpenFacets
   | FacetMsg of Facet.msg
@@ -28,7 +29,8 @@ type model = {
     nextResult: searchResultPageType remoteData;
     visitedRecords: Types.record array;
     facetsOpen: bool;
-    facetModel: Facet.model
+    facetModel: Facet.model;
+    onResults: contextUpdate;
   }
 
 
@@ -52,7 +54,8 @@ let init =
     nextResult = NotAsked;
     visitedRecords = [||];
     facetsOpen = false;
-    facetModel = Facet.init
+    facetModel = Facet.init;
+    onResults = NoUpdate
   }
 
 let getHttpCmd callback url =
@@ -139,7 +142,11 @@ let toggleFilter ~model ~filterKey ~filterVal ~mode =
 let update model context = function
   | OnSearch ->
      let searchParams = { model.searchParams with page = 0 } in
-     ( { model with lastSearch = None; searchParams },
+     ( { model with
+         lastSearch = None;
+         searchParams;
+         onResults = (PageLoaded (SearchRoute searchParams))
+       },
        Router.openUrl (Router.routeToUrl (SearchRoute searchParams)),
        NoUpdate
      )
@@ -158,28 +165,37 @@ let update model context = function
                      { model.results with pages }
      in
      let nextResult = LoadingType nextResult in
-     let model = { model with results; nextResult; searchParams = params } in
+     let model =
+       { model with results;
+                    nextResult;
+                    searchParams = params; }
+     in
      let cmd = getSearchCmd ~params ~lng:context.language in
      ( model, cmd, NoUpdate )
-  | SearchMore page ->
+  | SearchMore (page, searchInBkg) ->
      let nextResult = (LoadingType { page; results = Loading }) in
      let searchParams =
        { model.searchParams with page } in
-     ( { model with searchParams; nextResult },
-       Router.openUrl (Router.routeToUrl (SearchRoute searchParams)),
-       NoUpdate )
+     let (cmd, onResults) =
+       if searchInBkg then
+         (Cmd.msg (Search searchParams), GotResultsInBackground)
+       else
+         ( Router.openUrl (Router.routeToUrl (SearchRoute searchParams)),
+           (PageLoaded (SearchRoute model.searchParams)) )
+     in
+     ( { model with searchParams; nextResult; onResults }, cmd, NoUpdate )
   | OnChange lookfor ->
      let searchParams = { model.searchParams with lookfor } in
      ( { model with searchParams } , (Cmd.none), NoUpdate )
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in
      let model = appendResults ~model ~newResults: result in
-     ( model, Cmd.msg pageLoaded, NoUpdate )
+     ( model, Cmd.none, model.onResults )
   | GotResults (Error e) ->
      let result = Error (Http.string_of_error e) in
      let model = appendResults ~model ~newResults: result in
-     ( model, Cmd.msg pageLoaded, NoUpdate )
-  | PageLoaded -> ( model, Cmd.none, NoUpdate )
+     ( model, Cmd.none, model.onResults )
+  | SendResultsCb cmd -> (model, Cmd.none, cmd) (* callback when results loaded *)
   | OpenFacets -> ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets), NoUpdate )
   | RemoveFilter filterKey ->
      let (cmd, model) =
@@ -273,7 +289,7 @@ let isPageLoading ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) =
   match Js.Dict.get resultPages (string_of_int pageNum) with
   | Some page -> begin
       match page.results with
-      | LoadingType _ -> Js.log "loading"; Loading
+      | LoadingType _ -> Loading
       | Success p -> Success p
       | NotAsked -> NotAsked
       | _ -> Error ""
@@ -288,7 +304,7 @@ let resultPageLoadNeighbor ~pageNum ~(resultPages:searchResultPageType Js.Dict.t
        [ p [] [ text (Util.trans "Loading..." context.translations)] ]
   | NotAsked ->
     div
-       [ class' (Style.nextPage ~loading:true); onClick (SearchMore pageNum) ]
+       [ class' (Style.nextPage ~loading:true); onClick (SearchMore (pageNum, false)) ]
        [ text
            (Printf.sprintf "%s %d"
               (Util.trans "Page" context.translations)

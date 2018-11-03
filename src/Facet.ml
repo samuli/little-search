@@ -17,7 +17,7 @@ type facet = {
     lookfor: string;
     opened: bool;
   } 
-            
+
 type model = {
     isOpen: bool;
     lookfor: string;

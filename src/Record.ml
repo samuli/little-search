@@ -6,42 +6,76 @@ open Tea.Html
 
 type msg =
   | ShowRecord of string
-  | RecordPaginate of (recordId * int)
+  | RecordPaginate of (resultpageNum * navigateCmd)
+  | RecordPaginated
+  | NextResultPageLoaded of (int, string) Result.t
+  | LoadSearchResults of int
   | GotResult of (string, string Http.error) Result.t
   | CloseRecord
-  | PageLoaded
 [@@bs.deriving {accessors}]
 
 type model = {
     record: Types.record remoteData;
     nextRecord: Types.record remoteData;
+    navigateCmd: navigateCmd;
   }
 
 let init =
   {
     record = NotAsked;
     nextRecord = NotAsked;
+    navigateCmd = NoNavigate;
   }
 
-let update ~model ~context = function
+let update ~model ~context ~(results:searchResultsType) = function
   | ShowRecord id ->
      let url =
        Finna.getRecordUrl ~id ~lng:(Types.finnaLanguageCode context.language)
      in
      let cmd =  Http.send gotResult (Http.getString url) in
-     ( { model with nextRecord = Loading }, cmd )
+     ( { model with nextRecord = Loading }, cmd, NoUpdate )
   | GotResult (Ok data) ->
      let record = Finna.decodeRecordResult data in
-     ( { model with record }, Cmd.msg pageLoaded )
+     ( { model with record }, Cmd.none, (PageLoaded (RecordRoute "")) )
   | GotResult (Error e) ->
-     ( { model with record = Error (Http.string_of_error e) }, Cmd.msg pageLoaded )
-  | _ -> (model, Cmd.none )
-  (* | RecordPaginate (id, page) ->
-   *    let cmds = [
-   *        (Cmd.msg (Search.searchMore page))
-   *      ; ShowRecord id
-   *      ] in
-   *    (model, Cmd.batch cmds) *)
+     let model = { model with record = Error (Http.string_of_error e) } in
+     ( model, Cmd.none, (PageLoaded (RecordRoute "")))
+
+  | NextResultPageLoaded (Ok _data) ->
+     (model, Cmd.none, NoUpdate)
+  | NextResultPageLoaded (Error _e) ->
+     (* TODO handle this *)
+     (model, Cmd.none, NoUpdate)
+
+  | RecordPaginate (page, navigateCmd) ->
+     ( { model with navigateCmd; nextRecord = Loading }, Cmd.none, (LoadResultsInBackground page))
+  | RecordPaginated ->
+     let cmd = match model.navigateCmd with
+       | Navigate (id,dir) ->
+          begin
+            let pagination =
+              Pagination.paginateRecord ~id:id ~results ~limit:3
+            in
+            match pagination with
+            | None -> Cmd.none
+            | Some pagination -> begin
+                if dir = Backward then
+                  (match pagination.prev with
+                   | PaginateRecordCmd id -> Router.openRoute (RecordRoute id)
+                   | _ -> Cmd.none
+                  )
+                else
+                  (match pagination.next with
+                   | PaginateRecordCmd id ->
+                      Router.openRoute (RecordRoute id)
+                   | _ -> Cmd.none
+                  )
+              end
+          end
+       | NoNavigate -> Cmd.none
+     in
+     (model, cmd, NoUpdate)
+  | _ -> (model, Cmd.none, NoUpdate)
 
 let images recId imgs =
   (match imgs with
@@ -167,25 +201,31 @@ let recordNavigation ~(record:Types.record) ~results ~context =
   | Some pagination -> begin
       let totCnt = results.count in
       div [ ] [
-          (match pagination.prev with
+          (
+            let label = (Util.trans "Previous" context.translations) in
+            match pagination.prev with
            | PaginateRecordCmd id ->
               a
                 [ href (Router.routeToUrl (RecordRoute id)) ]
-                [ text (Util.trans "Previous" context.translations) ]
-           | PaginatePrevCmd (page, _id) ->
-              p [] [ text (Printf.sprintf "load page %d" page) ]
+                [ text label ]
+           | PaginatePrevCmd (page, id) ->
+              a [ onClick (RecordPaginate (page, (Navigate (id, Backward))))]
+                [ text label ]
            | _j -> noNode )
         ; (if totCnt > 0 then
              p [] [ text (Printf.sprintf "%d / %d" (pagination.ind+1) totCnt) ]
            else
              noNode)
-        ; (match pagination.next with
+        ; (
+          let label = (Util.trans "Next" context.translations) in
+          match pagination.next with
            | PaginateRecordCmd id ->
               a
                 [ href (Router.routeToUrl (RecordRoute id)) ]
-                [ text (Util.trans "Next" context.translations) ]
-           | PaginateNextCmd (page, _id) ->
-              p [] [ text (Printf.sprintf "load page %d" page) ]
+                [ text label ]
+           | PaginateNextCmd (page, id) ->
+              a [ onClick (RecordPaginate (page, (Navigate (id, Forward))))]
+                [ text label ]
            | _ -> noNode ) ]
     end
                      

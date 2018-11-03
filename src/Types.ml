@@ -1,6 +1,6 @@
-
 type recordId = string
-              
+type resultpageNum = int
+             
 type searchLookfor = string
 type searchParam = (string * string)
 type searchParams = {
@@ -118,16 +118,27 @@ type context = {
     pagination: pagination
   }
 
+type navigateDir =
+  | Forward
+  | Backward
+
+type navigateCmd =
+  | NoNavigate
+  | Navigate of (recordId * navigateDir)
+
+                 
 type contextUpdate =
   | NoUpdate
   | UpdateTranslations of string Js.Dict.t remoteData
   | UpdatePagination of pagination
+  | LoadResultsInBackground of resultpageNum
+  | GotResultsInBackground
+  | PageLoaded of route 
 [@@bs.deriving {accessors}]
 
                
 type page =
   | PageReady of route
   | PageLoading of route
-
 
                           
