@@ -3,7 +3,8 @@
     "format": "Content type",
     "building": "Organization",
     "language": "Language",
-    
+    "topic_facet": "Topic",
+
     "Loading...": "Loading",
     "Narrow search": "Narrow search",
     "Next": "Next",

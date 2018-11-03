@@ -3,6 +3,7 @@
     "format": "Aineistotyyppi",
     "building": "Organisaatio",
     "language": "Kieli",
+    "topic_facet": "Aihe",
     
     "Loading...": "Odota hetki...",
     "Narrow search": "Rajaa hakua",
