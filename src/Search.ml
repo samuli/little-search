@@ -25,7 +25,6 @@ type model = {
     results: searchResultsType;
     lastSearch: string option;
     nextResult: searchResultPageType remoteData;
-    visitedRecords: Types.record array;
     facetsOpen: bool;
     facetModel: Facet.model;
     onResults: contextUpdate;
@@ -54,7 +53,6 @@ let init =
     lastSearch = None;
     results = initResults ();
     nextResult = NotAsked;
-    visitedRecords = [||];
     facetsOpen = false;
     facetModel = Facet.init;
     onResults = PageLoaded (SearchRoute searchParams)
@@ -156,7 +154,7 @@ let update model context = function
          onResults = (resultsCallback ~inBkg:false ~searchParams)
        },
        Router.openUrl (Router.routeToUrl (SearchRoute searchParams)),
-       NoUpdate
+       [NoUpdate]
      )
   | Search params ->
      let newSearch =
@@ -181,7 +179,7 @@ let update model context = function
                     searchParams = params; }
      in
      let cmd = getSearchCmd ~params ~lng:context.language in
-     ( model, cmd, NoUpdate )
+     ( model, cmd, [NoUpdate] )
   | SearchMore (page, searchInBkg) ->
      let nextResult = (LoadingType { page; results = Loading }) in
      let searchParams =
@@ -193,28 +191,29 @@ let update model context = function
        else
          ( Router.openUrl (Router.routeToUrl (SearchRoute searchParams)), cb)
      in
-     ( { model with searchParams; nextResult; onResults }, cmd, NoUpdate )
+     ( { model with searchParams; nextResult; onResults }, cmd, [NoUpdate] )
   | OnChange lookfor ->
      let searchParams = { model.searchParams with lookfor } in
-     ( { model with searchParams } , (Cmd.none), NoUpdate )
+     ( { model with searchParams } , (Cmd.none), [NoUpdate] )
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in
      let model = appendResults ~model ~newResults: result in
      let onResults =
        resultsCallback ~inBkg:false ~searchParams:model.searchParams in
-     ( { model with onResults }, Cmd.none, model.onResults )
+     ( { model with onResults }, Cmd.none, [model.onResults] )
   | GotResults (Error e) ->
      let result = Error (Http.string_of_error e) in
      let model = appendResults ~model ~newResults: result in
      let onResults =
        resultsCallback ~inBkg:false ~searchParams:model.searchParams in
-     ( { model with onResults }, Cmd.none, model.onResults )
-  | OpenFacets -> ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets), NoUpdate )
+     ( { model with onResults }, Cmd.none, [model.onResults] )
+  | OpenFacets ->
+     ( model, Cmd.map facetMsg (Cmd.msg Facet.OpenFacets), [NoUpdate] )
   | RemoveFilter filterKey ->
      let (cmd, model) =
        toggleFilter ~model ~filterKey ~filterVal:"" ~mode:false
      in
-     (model, cmd, NoUpdate)
+     (model, cmd, [NoUpdate])
   | FacetMsg subMsg ->
      let lookfor = match model.lastSearch with
        | Some search -> search
@@ -245,13 +244,14 @@ let update model context = function
               ~mode:"loading"
               ~items:[||]
           in
-          ( { model with facetModel = { facetModel with facets} }, cmd, NoUpdate )
+          ( { model with facetModel = { facetModel with facets} },
+            cmd, [NoUpdate] )
        | Facet.ToggleFacetItem (mode, (filterKey, filterVal)) ->
           let (cmd, model) = toggleFilter ~model ~filterKey ~filterVal ~mode in
           let model = { model with facetModel } in
-          ( model, cmd, NoUpdate )
+          ( model, cmd, [NoUpdate] )
        | _ ->
-          ( {model with facetModel}, (Cmd.map facetMsg subCmd), NoUpdate )
+          ( {model with facetModel}, (Cmd.map facetMsg subCmd), [NoUpdate] )
      end
   | GotFacets (Ok data) ->
      let translations = context.translations in
@@ -269,15 +269,22 @@ let update model context = function
      in
      ( { model with facetModel = { model.facetModel with facets} },
        Cmd.none,
-       (UpdateTranslations translations) )
+       [(UpdateTranslations translations)] )
   | GotFacets (Error _e) ->
-     ( model, Cmd.none, NoUpdate )
+     ( model, Cmd.none, [NoUpdate] )
 
-let renderResultItem ~visitedRecords ~(r:Types.record) =
+let renderResultItem ~(r:Types.record) ~visitedRecords =
+  let lastVisited =
+    let len = Array.length visitedRecords in
+    if len = 0 then
+      false
+    else
+      Array.get visitedRecords (len-1) = r.id
+  in
   let visited =
     begin try
         let _el =
-          List.find (fun (el:Types.record) -> el.id = r.id)
+          List.find (fun id -> id = r.id)
             (Array.to_list visitedRecords)
         in
         true
@@ -286,7 +293,7 @@ let renderResultItem ~visitedRecords ~(r:Types.record) =
   a [ href (Router.routeToUrl (RecordRoute r.id))        
     ]
     [ li [ id (Util.hash r.id);
-           class' (Style.recordListBkg ~visited) ]
+           class' (Style.recordListBkg ~visited ~lastVisited) ]
         [
           Record.authors r.authors
         ; (match r.title with
@@ -333,7 +340,7 @@ let renderResultPage
   let records = searchResult.records in
   let items =
     Array.map
-      (fun r -> renderResultItem ~r ~visitedRecords:model.visitedRecords)
+      (fun r -> renderResultItem ~r ~visitedRecords:context.visitedRecords)
       records
     |> Array.to_list
   in

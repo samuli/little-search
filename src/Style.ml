@@ -199,11 +199,13 @@ let recordList ~_visited =
       borderBottom (px 1) solid greyLight;
     ]
 
-let recordListBkg ~visited =
+let recordListBkg ~visited ~lastVisited =
+  let bkgColor = if visited then hex "eff8ff" else white in
   style [
-      borderBottom (px 1) solid greyLight;      
+      borderBottom (px 1) solid greyLight;
+      borderLeft (px 4) solid (if lastVisited then blue else bkgColor);
       padding2 ~v: (em 0.5) ~h: (em 1.0);
-      backgroundColor (if visited then hex "eff8ff" else white);
+      backgroundColor bkgColor;
       hover [ backgroundColor greyLighter];
       cursor `pointer
     ]

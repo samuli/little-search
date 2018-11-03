@@ -33,23 +33,30 @@ let update ~model ~context ~(results:searchResultsType) = function
        Finna.getRecordUrl ~id ~lng:(Types.finnaLanguageCode context.language)
      in
      let cmd =  Http.send gotResult (Http.getString url) in
-     ( { model with nextRecord = Loading }, cmd, NoUpdate )
+     ( { model with nextRecord = Loading }, cmd, [NoUpdate])
   | GotResult (Ok data) ->
      let record = Finna.decodeRecordResult data in
-     ( { model with record }, Cmd.none, (PageLoaded (RecordRoute "")) )
+     let visited = match record with
+       | Success r -> Array.append context.visitedRecords [|r.id|]
+       | _ -> context.visitedRecords
+     in
+     let cmds = [
+         (UpdateVisitedRecords visited)
+       ; (PageLoaded (RecordRoute ""))
+       ] in
+     ( { model with record }, Cmd.none, cmds )
   | GotResult (Error e) ->
      let model = { model with record = Error (Http.string_of_error e) } in
-     ( model, Cmd.none, (PageLoaded (RecordRoute "")))
-
+     ( model, Cmd.none, [PageLoaded (RecordRoute "")])
   | NextResultPageLoaded (Ok _data) ->
-     (model, Cmd.none, NoUpdate)
+     (model, Cmd.none, [NoUpdate] )
   | NextResultPageLoaded (Error _e) ->
      (* TODO handle this *)
-     (model, Cmd.none, NoUpdate)
+     (model, Cmd.none, [NoUpdate] )
 
   | RecordPaginate (page, navigateCmd) ->
      ( { model with navigateCmd; nextRecord = Loading },
-       Cmd.none, (LoadResultsInBackground page))
+       Cmd.none, [LoadResultsInBackground page])
 
   | RecordPaginated ->
      let cmd = match model.navigateCmd with
@@ -76,10 +83,10 @@ let update ~model ~context ~(results:searchResultsType) = function
           end
        | NoNavigate -> Cmd.none
      in
-     (model, cmd, NoUpdate)
+     (model, cmd, [NoUpdate] )
   | CloseRecord ->
-     (model, Cmd.none, BackToSearch)
-  | _ -> (model, Cmd.none, NoUpdate)
+     (model, Cmd.none, [BackToSearch] )
+  | _ -> (model, Cmd.none, [NoUpdate] )
 
 let images recId imgs =
   (match imgs with

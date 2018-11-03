@@ -27,7 +27,8 @@ let initContext ~language ~limit = {
     language;
     translations = Loading;
     prevRoute = None;
-    pagination = { count = 0; items = []; limit};
+    pagination = { count = 0; items = []; limit; };
+    visitedRecords = [||];
   }
   
 let init () location =
@@ -85,11 +86,15 @@ let handleOutMsg ~outMsg ~model =
   | PageLoaded route ->
      let model = handlePageLoaded ~route ~model in
      (model, Cmd.none)
+
   | UpdateTranslations translations ->
      let context = { context with translations } in
      ( { model with context }, Cmd.none)
   | UpdatePagination pagination -> 
      ( { model with context = { context with pagination } }, Cmd.none)
+  | UpdateVisitedRecords visitedRecords ->
+     ( { model with context = { context with visitedRecords } }, Cmd.none)
+
   | LoadResultsInBackground (page) ->
      let (searchModel, cmd, _) =
        Search.update
@@ -111,7 +116,14 @@ let handleOutMsg ~outMsg ~model =
      let cmd = Router.openUrl (Router.routeToUrl route) in
      ( model, cmd)
   | NoUpdate -> (model, Cmd.none)
-       
+
+let handleOutMsgs ~outMsgs ~model =
+  List.fold_left
+    (fun (model,cmds) outMsg ->
+      let (model, outCmd) = handleOutMsg ~outMsg ~model in
+      ( model, (List.append cmds [outCmd]) ))
+    (model, []) outMsgs
+
 let update model = function
   | ChangeLanguage language ->
      let cmd =
@@ -131,16 +143,17 @@ let update model = function
      ( { model with context }, Cmd.none )
 
   | SearchMsg subMsg ->
-     let (searchModel, cmd, outMsg) =
+     let (searchModel, cmd, outMsgs) =
        Search.update model.searchModel model.context subMsg
      in
      let cmd = Cmd.map searchMsg cmd in
      let model = { model with searchModel } in
-     let (model, outCmd) = handleOutMsg ~outMsg ~model in
-     ( model, Cmd.batch [cmd; outCmd] )     
+
+     let (model, cmds) = handleOutMsgs ~model ~outMsgs in
+     ( model, Cmd.batch (List.append [cmd] cmds) )     
 
   | RecordMsg subMsg ->
-     let (recordModel, cmd, outMsg) =
+     let (recordModel, cmd, outMsgs) =
        (Record.update
           ~model:model.recordModel
           ~context:model.context
@@ -148,9 +161,10 @@ let update model = function
      in
      let cmd = Cmd.map recordMsg cmd in
      let model = { model with recordModel } in
-     let (model, outCmd) = handleOutMsg ~outMsg ~model in
-     ( model, Cmd.batch [cmd; outCmd] )
 
+     let (model, cmds) = handleOutMsgs ~model ~outMsgs in
+     ( model, Cmd.batch (List.append [cmd] cmds) )
+     
   | UrlChanged location ->
      let route = Router.urlToRoute location in
      let (nextPage, cmd) =

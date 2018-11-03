@@ -114,6 +114,7 @@ type route =
 type context = {
     language: language; 
     translations: string Js.Dict.t remoteData;
+    visitedRecords: recordId array;
     prevRoute: route option;
     pagination: pagination
   }
@@ -131,6 +132,7 @@ type contextUpdate =
   | NoUpdate
   | UpdateTranslations of string Js.Dict.t remoteData
   | UpdatePagination of pagination
+  | UpdateVisitedRecords of recordId array
   | LoadResultsInBackground of resultpageNum
   | GotResultsInBackground
   | PageLoaded of route
