@@ -14,8 +14,7 @@ let recordNeighbors ~id ~ids ~limit ~resultCount =
     | [] -> None
     | (recId, page) :: rest ->
        let pageInd = if pageNum <> page then 0 else pageInd in
-       if recId = id
-       then
+       if recId = id then
          let recInd = (page*limit) + pageInd in
          Some (recId, page, recInd, cnt)
        else

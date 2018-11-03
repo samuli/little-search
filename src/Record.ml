@@ -48,7 +48,9 @@ let update ~model ~context ~(results:searchResultsType) = function
      (model, Cmd.none, NoUpdate)
 
   | RecordPaginate (page, navigateCmd) ->
-     ( { model with navigateCmd; nextRecord = Loading }, Cmd.none, (LoadResultsInBackground page))
+     ( { model with navigateCmd; nextRecord = Loading },
+       Cmd.none, (LoadResultsInBackground page))
+
   | RecordPaginated ->
      let cmd = match model.navigateCmd with
        | Navigate (id,dir) ->
@@ -181,19 +183,25 @@ let urlList (r:Types.record) =
        | Some urls when Array.length urls > 0 -> urls |> Array.to_list
        | _ -> [])
   in
-  ul [ class' Style.recordLinks ] (List.map (fun (url:Types.onlineUrl) ->
-      match (url.label, url.url) with
-      | (Some label, Some url) -> li [ class' Style.recordLink ] [ a [ href url ] [ text label ] ]
-      | (None, Some url) -> li [ class' Style.recordLink ] [ a [ href url ] [ text url ] ]
-      | _ -> noNode) urls)
+  ul [ class' Style.recordLinks ]
+    (List.map (fun (url:Types.onlineUrl) ->
+         match (url.label, url.url) with
+         | (Some label, Some url) ->
+            li [ class' Style.recordLink ] [ a [ href url ] [ text label ] ]
+         | (None, Some url) ->
+            li [ class' Style.recordLink ] [ a [ href url ] [ text url ] ]
+         | _ -> noNode) urls)
 
 let finnaLink id context =
   p [] [ a [ href (Finna.getRecordLink id) ]
            [ text (Util.trans "View in Finna" context.translations) ] ]
 
-let recordNavigation ~(record:Types.record) ~results ~context =
+let recordNavigation ~(record:Types.record) ~results ~context ~limit =
   let pagination =
-    Pagination.paginateRecord ~id:record.id ~results ~limit:3
+    Pagination.paginateRecord
+      ~id:record.id
+      ~results
+      ~limit
   in
   Js.log pagination;
   match pagination with
@@ -229,9 +237,9 @@ let recordNavigation ~(record:Types.record) ~results ~context =
            | _ -> noNode ) ]
     end
                      
-let viewRecord ~(r:Types.record) ~context ~results =
+let viewRecord ~(r:Types.record) ~context ~results ~limit =
   div [ ] [
-      (recordNavigation ~record:r ~results ~context)
+      (recordNavigation ~record:r ~results ~context ~limit)
     ; (match r.title with
        | Some title when title <> "" -> h1 [] [ text title ]
        | _ -> noNode)
@@ -247,13 +255,13 @@ let viewRecord ~(r:Types.record) ~context ~results =
     ; finnaLink r.id context
     ]
   
-let view ~model ~context ~results =
+let view ~model ~context ~results ~limit =
   div
     [ class' Style.recordFull ]
     [
       match model.record with
       | Loading -> statusLoading ()
       | Error e -> statusError e
-      | Success r -> viewRecord ~r ~context ~results
+      | Success r -> viewRecord ~r ~context ~results ~limit
       | _ -> Html.noNode
     ]

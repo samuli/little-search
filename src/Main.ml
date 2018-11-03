@@ -26,7 +26,6 @@ type model = {
 let initContext ~language ~limit = {
     language;
     translations = Loading;
-    (* recordIds = []; *)
     prevRoute = None;
     pagination = { count = 0; items = []; limit};
   }
@@ -39,7 +38,8 @@ let init () location =
   let context = initContext ~language ~limit:0 in
   let route = Router.urlToRoute location in
   let translationsCmd =
-    Util.loadTranslations (Types.languageCode context.language) gotTranslations in
+    Util.loadTranslations (Types.languageCode context.language) gotTranslations
+  in
   let urlChangeCmd = Cmd.msg (urlChanged location) in
   ({ route;
      searchModel = Search.init;
@@ -114,12 +114,15 @@ let update model = function
   | GotTranslations (Ok data) ->
      Util.toStorage "language" (Types.languageCode model.context.language);
      let translations = Util.decodeTranslations data in
-     let (model, cmd) = handleOutMsg ~outMsg:(UpdateTranslations translations) ~model in
+     let (model, cmd) =
+       handleOutMsg ~outMsg:(UpdateTranslations translations) ~model
+     in
      (model, cmd)
   | GotTranslations (Error e) ->
      let translations = Error (Http.string_of_error e) in
      let context = { model.context with translations } in
      ( { model with context }, Cmd.none )
+
   | SearchMsg subMsg ->
      let (searchModel, cmd, outMsg) =
        Search.update model.searchModel model.context subMsg
@@ -128,6 +131,7 @@ let update model = function
      let model = { model with searchModel } in
      let (model, outCmd) = handleOutMsg ~outMsg ~model in
      ( model, Cmd.batch [cmd; outCmd] )     
+
   | RecordMsg subMsg ->
      let (recordModel, cmd, outMsg) =
        (Record.update
@@ -139,6 +143,7 @@ let update model = function
      let model = { model with recordModel } in
      let (model, outCmd) = handleOutMsg ~outMsg ~model in
      ( model, Cmd.batch [cmd; outCmd] )
+
   | UrlChanged location ->
      let route = Router.urlToRoute location in
      let (nextPage, cmd) =
@@ -186,7 +191,7 @@ let view model =
         [ ]
         [
           (languageMenu model.context)
-          ;p
+          ; p
             [ ]
             [ match model.route with
               | MainRoute ->
@@ -202,6 +207,7 @@ let view model =
                    ~model:model.recordModel
                    ~context:model.context
                    ~results:model.searchModel.results
+                   ~limit:model.searchModel.searchParams.limit
                  |> map recordMsg
             ]
         ]
