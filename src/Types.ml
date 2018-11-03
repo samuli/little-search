@@ -133,7 +133,8 @@ type contextUpdate =
   | UpdatePagination of pagination
   | LoadResultsInBackground of resultpageNum
   | GotResultsInBackground
-  | PageLoaded of route 
+  | PageLoaded of route
+  | BackToSearch
 [@@bs.deriving {accessors}]
 
                

@@ -106,6 +106,10 @@ let handleOutMsg ~outMsg ~model =
          (Record.recordPaginated)
      in
      (model, (Cmd.map recordMsg cmd) )
+  | BackToSearch ->
+     let route = (SearchRoute model.searchModel.searchParams) in
+     let cmd = Router.openUrl (Router.routeToUrl route) in
+     ( model, cmd)
   | NoUpdate -> (model, Cmd.none)
        
 let update model = function

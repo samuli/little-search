@@ -77,6 +77,8 @@ let update ~model ~context ~(results:searchResultsType) = function
        | NoNavigate -> Cmd.none
      in
      (model, cmd, NoUpdate)
+  | CloseRecord ->
+     (model, Cmd.none, BackToSearch)
   | _ -> (model, Cmd.none, NoUpdate)
 
 let images recId imgs =
@@ -208,7 +210,9 @@ let recordNavigation ~(record:Types.record) ~results ~context ~limit =
   | Some pagination -> begin
       let totCnt = results.count in
       div [ ] [
-          (
+          p [ onClick CloseRecord ]
+            [ text (Util.trans "Back to results" context.translations) ]
+        ; (
             let label = (Util.trans "Previous" context.translations) in
             match pagination.prev with
            | PaginateRecordCmd id ->
