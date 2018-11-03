@@ -41,21 +41,25 @@ let initResults _ =
     pages = Js.Dict.empty();
   }
 
+
 let init =
-  {
-    searchParams = {
+  let searchParams =
+    {
       lookfor = "";
       page = 0;
       limit = 10;
       filters = [];
-    };
+    }
+  in
+  {
+    searchParams;
     lastSearch = None;
     results = initResults ();
     nextResult = NotAsked;
     visitedRecords = [||];
     facetsOpen = false;
     facetModel = Facet.init;
-    onResults = NoUpdate
+    onResults = PageLoaded (SearchRoute searchParams)
   }
 
 let getHttpCmd callback url =

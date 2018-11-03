@@ -105,7 +105,7 @@ type pagination = {
     count: int;
     limit: int;
 }
-             
+
 type route =
   | MainRoute
   | SearchRoute of searchParams
