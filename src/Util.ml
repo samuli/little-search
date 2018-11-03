@@ -1,6 +1,6 @@
 let extractSearchParams params =
   let lookfor = match List.find (fun (key, _value) -> key = "lookfor") params with
-  | (_, lookfor) -> lookfor
+  | (_, lookfor) -> Js_global.decodeURIComponent lookfor
   | exception Not_found -> ""
   in
   let page = match List.find (fun (key, _value) -> key = "page") params with
