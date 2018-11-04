@@ -1,11 +1,14 @@
 open Tea.Html
-
+open Types
+   
 type statusType =
   | InfoStatus
   | ErrorStatus
 
-let statusLoading (): 'a Vdom.t
-  = div [ class' Style.info ] [ text "Loading..." ]
+let statusLoading ~context =
+  div
+    [ class' Style.info ]
+    [ text (Util.trans "Loading..." context.translations) ]
 
 let statusError (e) : 'a Vdom.t
   = div [ class' Style.error ] [ text ("Error: " ^ e) ]

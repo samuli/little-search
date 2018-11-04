@@ -380,7 +380,7 @@ let renderResultPage
 let resultPage ~(page:searchResultPageType) ~model ~context =
     match (page.results, page.page) with
       | (Error e, _) -> statusError e
-      | (Loading, _) -> statusLoading ()
+      | (Loading, _) -> statusLoading ~context
       | (Success res, pageNum) -> renderResultPage pageNum res model context
       | _ -> Html.noNode
 

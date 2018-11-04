@@ -279,7 +279,7 @@ let view ~model ~context =
     [ class' Style.recordFull ]
     [
       match model.record with
-      | Loading -> statusLoading ()
+      | Loading -> statusLoading ~context
       | Error e -> statusError e
       | Success r -> viewRecord ~r ~context
       | _ -> Html.noNode
