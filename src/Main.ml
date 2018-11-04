@@ -29,6 +29,9 @@ let initContext ~language ~limit = {
     prevRoute = None;
     pagination = { count = 0; items = []; limit; };
     visitedRecords = [||];
+    recordIds = [];
+    numOfResults = 0;
+    resultLimit = limit;
   }
   
 let init () location =
@@ -94,6 +97,10 @@ let handleOutMsg ~outMsg ~model =
      ( { model with context = { context with pagination } }, Cmd.none)
   | UpdateVisitedRecords visitedRecords ->
      ( { model with context = { context with visitedRecords } }, Cmd.none)
+  | UpdateResultInfo (numOfResults, recordIds, resultLimit) ->
+     ( { model with
+         context = { context with recordIds; numOfResults; resultLimit }
+       }, Cmd.none)
 
   | LoadResultsInBackground (page) ->
      let (searchModel, cmd, _) =
@@ -103,13 +110,7 @@ let handleOutMsg ~outMsg ~model =
      let cmd = Cmd.map searchMsg cmd in
      ( { model with searchModel }, cmd )
   | GotResultsInBackground ->
-     let (_recordModel, cmd, _) =
-       Record.update
-         ~model:model.recordModel
-         ~context:model.context
-         ~results:model.searchModel.results
-         (Record.recordPaginated)
-     in
+     let cmd = Cmd.msg (Record.RecordPaginated) in
      (model, (Cmd.map recordMsg cmd) )
   | BackToSearch ->
      let route = (SearchRoute model.searchModel.searchParams) in
@@ -157,7 +158,7 @@ let update model = function
        (Record.update
           ~model:model.recordModel
           ~context:model.context
-          ~results:model.searchModel.results subMsg)
+           subMsg)
      in
      let cmd = Cmd.map recordMsg cmd in
      let model = { model with recordModel } in
@@ -227,8 +228,6 @@ let view model =
                  Record.view
                    ~model:model.recordModel
                    ~context:model.context
-                   ~results:model.searchModel.results
-                   ~limit:model.searchModel.searchParams.limit
                  |> map recordMsg
             ]
         ]

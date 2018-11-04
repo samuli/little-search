@@ -230,7 +230,7 @@ let recordImages = style [ marginTop (em 1.0) ]
 let recordImage =
   style [
     marginTop (em 0.5);
-    minHeight (px 100);
+    minHeight (px 200);
     backgroundColor greyLight;
     ]
 let recordAuthors = style [ fontWeight 400; marginRight (em 0.5) ]

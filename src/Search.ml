@@ -200,9 +200,16 @@ let update model context = function
   | GotResults (Ok data) ->
      let result = Finna.decodeSearchResults data in
      let model = appendResults ~model ~newResults: result in
+
+     let (recIds, _pageNums) = Pagination.recordPages model.results in
+     let updateResultInfo =
+       UpdateResultInfo (
+           model.results.count, recIds, model.searchParams.limit
+         )
+     in
      let onResults =
        resultsCallback ~inBkg:false ~searchParams:model.searchParams in
-     ( { model with onResults }, Cmd.none, [model.onResults] )
+     ( { model with onResults }, Cmd.none, [updateResultInfo; model.onResults] )
   | GotResults (Error e) ->
      let result = Error (Http.string_of_error e) in
      let model = appendResults ~model ~newResults: result in

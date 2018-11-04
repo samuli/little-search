@@ -1,13 +1,15 @@
 type recordId = string
 type resultpageNum = int
-             
+type resultLimit = int
+type resultCount = int
+                 
 type searchLookfor = string
 type searchParam = (string * string)
 type searchParams = {
     lookfor: string;
     filters: searchParam list;
-    page: int;
-    limit: int;
+    page: resultpageNum;
+    limit: resultLimit;
   }
                   
 type 't remoteData =
@@ -85,7 +87,9 @@ type searchResultsType = {
     pageCount: int;
     pages: searchResultPageType Js.Dict.t;
   }
-                       
+
+type paginationRecord = (int * recordId)
+                    
 type paginationCmd =
   | PaginateNoCmd
   | PaginateRecordCmd of recordId
@@ -117,7 +121,10 @@ type context = {
     translations: string Js.Dict.t remoteData;
     visitedRecords: recordId array;
     prevRoute: route option;
-    pagination: pagination
+    pagination: pagination;
+    recordIds: paginationRecord list;
+    numOfResults: resultCount;
+    resultLimit: resultLimit;
   }
 
 type navigateDir =
@@ -133,6 +140,7 @@ type contextUpdate =
   | NoUpdate
   | UpdateTranslations of string Js.Dict.t remoteData
   | UpdatePagination of pagination
+  | UpdateResultInfo of (resultCount * paginationRecord list * resultLimit)
   | UpdateVisitedRecords of recordId array
   | LoadResultsInBackground of resultpageNum
   | GotResultsInBackground
