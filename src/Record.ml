@@ -206,8 +206,10 @@ let urlList (r:Types.record) =
          | _ -> noNode) urls)
 
 let finnaLink id context =
-  p [] [ a [ href (Finna.getRecordLink id) ]
-           [ text (Util.trans "View in Finna" context.translations) ] ]
+  p []
+    [ a [ href (Finna.getRecordLink id)
+        ; class' Style.recordFinnaLink ]
+        [ text (Util.trans "View in Finna" context.translations) ] ]
 
 let recordNavigation ~(record:Types.record) ~(context:context) =
   let resultCount = context.numOfResults in
@@ -218,69 +220,83 @@ let recordNavigation ~(record:Types.record) ~(context:context) =
       ~resultCount
       ~limit:context.resultLimit
   in
-  match pagination with
-  | None -> noNode
-  | Some pagination -> begin
-      (* Set a dummy attribute for background loading paginate links so that the vdom notices that they differ from normal paginate links... *)
-         
-      let loadBkgProp = (Vdom.prop "load-in-bkg" "1") in
-      div [ ] [
-          p [ onClick CloseRecord ]
-            [ text (Util.trans "Back to results" context.translations) ]
-        ; (
-            let label = (Util.trans "Previous" context.translations) in
-            match pagination.prev with
-           | PaginateRecordCmd recId ->
-              a [ href (Router.routeToUrl (RecordRoute recId)) ]
-                [ text label ]
-           | PaginatePrevCmd (page, recId) ->
-              a [ loadBkgProp
-                ; onClick (RecordPaginate (page, (Navigate (recId, Backward))))]
-                [ text label ]
-           | _j -> noNode )
-        ; (if resultCount > 0 then
-             p [] [ text (Printf.sprintf "%d / %d" (pagination.ind+1) resultCount) ]
-           else
-             noNode)
-        ; (
-          let label = (Util.trans "Next" context.translations) in
-          match pagination.next with
-           | PaginateRecordCmd recId ->
-              a [ href (Router.routeToUrl (RecordRoute recId))]
-                [ text label ]
-           | PaginateNextCmd (page, recId) ->
-              a [ loadBkgProp
-                ; onClick (RecordPaginate (page, (Navigate (recId, Forward))))
-                ]
-                [ text label ]
-           | _ -> noNode ) ]
-    end
+
+  let renderPagination pagination =
+    let loadBkgProp = (Vdom.prop "load-in-bkg" "1") in
+    div [] [
+        (* Set a dummy attribute for background loading paginate links so that the vdom notices that they differ from normal paginate links... *)
+        (let label = (Util.trans "Previous" context.translations) in
+         match pagination.prev with
+         | PaginateRecordCmd recId ->
+            a [ class' (Style.arrowIcon Style.ArrowLeft)
+              ; href (Router.routeToUrl (RecordRoute recId))
+              ; title label ] []
+         | PaginatePrevCmd (page, recId) ->
+            a [ class' (Style.arrowIcon Style.ArrowLeft)
+              ; loadBkgProp
+              ; onClick (RecordPaginate (page, (Navigate (recId, Backward))))
+              ; title label ] []
+         | _j -> noNode)
+      ; (if resultCount > 0 then
+           p [ class' Style.paginateInfo]
+             [ text (Printf.sprintf "%d / %d" (pagination.ind+1) resultCount) ]
+         else
+           noNode)
+      ; (
+        let label = (Util.trans "Next" context.translations) in
+        match pagination.next with
+        | PaginateRecordCmd recId ->
+           a [ class' (Style.arrowIcon Style.ArrowRight)
+             ; href (Router.routeToUrl (RecordRoute recId))
+             ; title label ] []
+        | PaginateNextCmd (page, recId) ->
+           a [ class' (Style.arrowIcon Style.ArrowRight)
+             ; loadBkgProp
+             ; onClick (RecordPaginate (page, (Navigate (recId, Forward))))
+             ; title label
+             ] []
+        | _ -> noNode)
+      ]
+  in
+  
+  div [ class' Style.paginationContainer]
+    [
+      div [] [
+          a [ class' Style.closeIcon
+            ; onClick CloseRecord ] []
+        ]
+    ; (match pagination with
+       | None -> noNode
+       | Some pagination -> renderPagination pagination)
+    ]
                      
 let viewRecord ~(r:Types.record) ~context =
-  div [ ] [
+  div [] [
       (recordNavigation ~record:r ~context)
-    ; (match r.title with
-       | Some title when title <> "" -> h1 [] [ text title ]
-       | _ -> noNode)
-    ; summary r.summary
-    ; authors r.authors
-    ; publishInfo r
-    ; div [] [
-          formats r.formats
-        ; buildings r.buildings
+    ; div [ class' Style.recordContent ] [
+          (match r.title with
+           | Some title when title <> "" -> h1 [] [ text title ]
+           | _ -> noNode)
+        ; summary r.summary
+        ; authors r.authors
+        ; publishInfo r
+        ; div [] [
+              formats r.formats
+            ; buildings r.buildings
+            ]
+        ; images r.id r.images
+        ; urlList r
+        ; finnaLink r.id context
         ]
-    ; images r.id r.images
-    ; urlList r
-    ; finnaLink r.id context
     ]
   
 let view ~model ~context =
   div
-    [ class' Style.recordFull ]
+    []
     [
-      match model.record with
-      | Loading -> statusLoading ~context
-      | Error e -> statusError e
-      | Success r -> viewRecord ~r ~context
-      | _ -> Html.noNode
-    ]
+      (match model.record with
+       | Loading -> statusLoading ~context
+       | Error e -> statusError e
+       | Success r -> viewRecord ~r ~context
+       | _ -> Html.noNode)
+    ] 

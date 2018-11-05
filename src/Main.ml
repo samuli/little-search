@@ -113,6 +113,7 @@ let handleOutMsg ~outMsg ~model =
      let cmd = Cmd.msg (Record.RecordPaginated) in
      (model, (Cmd.map recordMsg cmd) )
   | BackToSearch ->
+     Js.log "main::back to search";
      let route = (SearchRoute model.searchModel.searchParams) in
      let cmd = Router.openUrl (Router.routeToUrl route) in
      ( model, cmd)
@@ -188,11 +189,11 @@ let languageMenu context =
         class' (Style.language ~active)
       ; onClick (changeLanguage lng)
       ]
-      [ div [] [ text (Types.languageCode lng) ] ]
+      [ text (Types.languageCode lng) ]
   in
     
   let currentLng = context.language in
-  div [] [
+  div [ class' Style.languageMenuContainer ] [
     ul [ class' Style.languageMenu ] [
           item ~lng:LngFi ~currentLng 
         ; item ~lng:LngEn ~currentLng 
@@ -212,8 +213,7 @@ let view model =
     ; div
         [ ]
         [
-          (languageMenu model.context)
-          ; p
+          p
             [ ]
             [ match model.route with
               | MainRoute ->
@@ -230,6 +230,7 @@ let view model =
                    ~context:model.context
                  |> map recordMsg
             ]
+        ; (languageMenu model.context)
         ]
     ]
 

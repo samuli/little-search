@@ -128,25 +128,27 @@ let facetList ~facets ~filters ~context =
         onClick (ToggleFacetItem ((not isActive), ( key, item.value )))
       ; class' (Style.facetItem isActive)
       ]
-      [ text (item.translated ^ (Printf.sprintf " (%d)" item.count)) ]
+      [
+        h3 []
+          [ text (item.translated ^ (Printf.sprintf " (%d)" item.count)) ]
+      ]
   in  
   let renderFacetItems ~key ~items ~filters =
     Array.map (fun item -> renderFacetItem ~key ~item ~filters) items
   in
   let facet ~f ~context =
-    let renderFacet ~opened ~key ~items ~css ~filters =
-      li [ class' (Style.facet css)
-        ]
+    let renderFacet ~opened ~key ~items ~loading ~filters =
+      li [ class' (Style.facet ~opened ~loading)
+         ; onClick (ToggleFacet key) ]
         [
-          p [ onClick (ToggleFacet key) ]
-            [ text (Util.trans key context.translations) ]
-        ; (if opened then ul [] (Array.to_list (renderFacetItems ~key ~items ~filters)) else noNode)
+          h2 [] [ text (Util.trans key context.translations) ]
+        ; (if opened then ul [ class' Style.facetItemsContainer ] (Array.to_list (renderFacetItems ~key ~items ~filters)) else noNode)
         ]
     in
     match f.items with
-    | Success t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~css:"loaded" ~filters
-    | NotAskedType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~css:"not-asked" ~filters
-    | LoadingType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~css:"loading" ~filters
+    | Success t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:false ~filters
+    | NotAskedType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:false ~filters
+    | LoadingType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:true ~filters
     | _ -> noNode
   in
   ul [ ]
@@ -162,7 +164,11 @@ let view ~model ~context ~filters =
   if model.isOpen = false then noNode else
     div [ class' Style.facetModal ]
       [
-        button [ onClick CloseFacets ] [ text "close" ]
-      ; text "facet"
+        div [ class' Style.facetHeader ] [
+            h1 [ class' Style.facetHeading ]
+              [ text (Util.trans "Narrow search" context.translations) ]
+           ; a [ class' Style.closeIcon
+              ; onClick CloseFacets ] []
+          ]
       ; facetList ~facets:model.facets ~filters ~context
       ]

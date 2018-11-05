@@ -330,23 +330,28 @@ let isPageLoading ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) =
   | _ -> NotAsked
   
 let resultPageLoadNeighbor
-      ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) ~context =
-  match isPageLoading ~pageNum ~resultPages with
-  | Loading ->
-     div
-       [ class' (Style.nextPage ~loading:false) ]
-       [ p [] [ text (Util.trans "Loading..." context.translations)] ]
-  | NotAsked ->
-    div
-      [ class' (Style.nextPage ~loading:true)
-      ; onClick (SearchMore (pageNum, false))
-      ]
-       [ text
-           (Printf.sprintf "%s %d"
-              (Util.trans "Page" context.translations)
-              (pageNum+1))
-       ]
-  | _ -> noNode
+      ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) ~context ~dir =
+
+  let isLoading = isPageLoading ~pageNum ~resultPages in
+  match isLoading with
+  | Loading | NotAsked ->
+     begin
+       let arrow = if dir = Backward then Style.ArrowUp else Style.ArrowDown in
+       div
+         [ class' (Style.nextPage ~loading:(isLoading = Loading))
+         ; onClick (SearchMore (pageNum, false))
+         ]
+         [
+           p []
+             [ span [ class' Style.nextPageLabel ]
+                 [ text (Printf.sprintf "%s %d"
+                           (Util.trans "Page" context.translations)
+                           (pageNum+1)) ]
+             ; span [ class' (Style.arrowIcon arrow) ] []
+             ]
+         ]
+     end
+     | _ -> noNode
   
 let renderResultPage
       pageNum (searchResult:Types.searchResult) (model:model) context =
@@ -363,6 +368,7 @@ let renderResultPage
            ~pageNum:(pageNum-1)
            ~resultPages:model.results.pages
            ~context
+           ~dir:Backward
        else
          noNode)
     ; ul
@@ -373,6 +379,7 @@ let renderResultPage
            ~pageNum:(pageNum+1)
            ~resultPages:model.results.pages
            ~context
+           ~dir:Forward
        else
          noNode)
     ]
@@ -380,7 +387,15 @@ let renderResultPage
 let resultPage ~(page:searchResultPageType) ~model ~context =
     match (page.results, page.page) with
       | (Error e, _) -> statusError e
-      | (Loading, _) -> statusLoading ~context
+      | (Loading, _) ->
+         div [ class' (Style.nextPage ~loading:true) ]
+           [
+             p []
+               [ span [ class' Style.nextPageLabel ]
+                   [ text (Util.trans "Loading..." context.translations) ]
+               ; span [ class' (Style.spinnerIcon) ] []
+               ]
+           ]
       | (Success res, pageNum) -> renderResultPage pageNum res model context
       | _ -> Html.noNode
 
@@ -393,7 +408,7 @@ let results ~results ~model ~context =
       if a > b then 1 else -1) pageNums;
   div []
     [
-      p [ class' Style.searchResultsInfo ]
+      h3 [ class' Style.searchResultsInfo ]
         [ text (Printf.sprintf "%s: %d"
                   (Util.trans "Results" context.translations)
                   results.count)
@@ -440,6 +455,7 @@ let view model context =
                     ] []            
                 ; input'
                     [ type' "submit"
+                    ; class' Style.searchBoxSubmit
                     ; value (Util.trans "Search!" context.translations)
                     ]
                     []
