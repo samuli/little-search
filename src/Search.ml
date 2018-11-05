@@ -182,18 +182,23 @@ let update model context = function
      ( model, cmd, [NoUpdate] )
 
   | SearchMore (page, searchInBkg) ->
-     let nextResult = (LoadingType { page; results = Loading }) in
-     let searchParams =
-       { model.searchParams with page } in
-     let (cmd, onResults) =
-       let cb = resultsCallback ~inBkg:searchInBkg ~searchParams in
-       if searchInBkg then
-         (Cmd.msg (Search searchParams), cb)
-       else
-         ( Router.openUrl (Router.routeToUrl (SearchRoute searchParams)), cb)
-     in
-     ( { model with searchParams; nextResult; onResults }, cmd, [NoUpdate] )
-
+     begin
+       match (model.nextResult) with
+       | (LoadingType _) -> (model, Cmd.none, [NoUpdate])
+       | _ ->
+          let nextResult = (LoadingType { page; results = Loading }) in
+          let searchParams =
+            { model.searchParams with page } in
+          let (cmd, onResults) =
+            let cb = resultsCallback ~inBkg:searchInBkg ~searchParams in
+            if searchInBkg then
+              (Cmd.msg (Search searchParams), cb)
+            else
+              ( Router.openUrl (Router.routeToUrl (SearchRoute searchParams)), cb)
+          in
+          ( { model with searchParams; nextResult; onResults }, cmd, [NoUpdate] )
+     end
+       
   | OnChange lookfor ->
      let searchParams = { model.searchParams with lookfor } in
      ( { model with searchParams } , (Cmd.none), [NoUpdate] )
