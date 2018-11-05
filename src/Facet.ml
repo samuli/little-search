@@ -137,11 +137,17 @@ let facetList ~facets ~filters ~context =
     Array.map (fun item -> renderFacetItem ~key ~item ~filters) items
   in
   let facet ~f ~context =
-    let renderFacet ~opened ~key ~items ~loading ~filters =
+    let renderFacet ~opened ~key ~items ~loading ~filters =      
+      let icon = match (loading, opened) with
+        | (true, _) -> Style.spinnerIcon
+        | (_, true) -> Style.arrowIcon Style.ArrowDown
+        | (_, false) -> Style.arrowIcon Style.ArrowRight
+      in
       li [ class' (Style.facet ~opened ~loading)
          ; onClick (ToggleFacet key) ]
         [
-          h2 [] [ text (Util.trans key context.translations) ]
+          span [ class' icon ] []
+        ; h2 [ class' Style.facetTitle ] [ text (Util.trans key context.translations) ]
         ; (if opened then ul [ class' Style.facetItemsContainer ] (Array.to_list (renderFacetItems ~key ~items ~filters)) else noNode)
         ]
     in

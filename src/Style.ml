@@ -160,6 +160,12 @@ let facetItemsContainer =
   style [
       marginLeft (em 1.0)
     ]
+
+let facetTitle =
+  style [
+      display `inlineBlock
+    ; marginLeft (em 0.5)
+    ]
   
 let facetItem _active =
   style [
