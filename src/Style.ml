@@ -172,7 +172,15 @@ let facetItem _active =
       padding2 ~v:(em 1.0) ~h:(px 0)
     ; cursor `pointer
     ]
-    
+
+let facetLabel ~active =
+  if active then
+    style [
+        fontWeight 700
+      ]
+  else
+    style []
+  
   (* match active with
    *   | true -> style [ border (px 2) `solid red ]
    *   | false -> style [] *)

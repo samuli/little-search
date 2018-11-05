@@ -129,7 +129,7 @@ let facetList ~facets ~filters ~context =
       ; class' (Style.facetItem isActive)
       ]
       [
-        h3 []
+        h3 [ class' (Style.facetLabel ~active:isActive)]
           [ text (item.translated ^ (Printf.sprintf " (%d)" item.count)) ]
       ]
   in  
@@ -147,8 +147,14 @@ let facetList ~facets ~filters ~context =
          ; onClick (ToggleFacet key) ]
         [
           span [ class' icon ] []
-        ; h2 [ class' Style.facetTitle ] [ text (Util.trans key context.translations) ]
-        ; (if opened then ul [ class' Style.facetItemsContainer ] (Array.to_list (renderFacetItems ~key ~items ~filters)) else noNode)
+        ; h2
+            [ class' Style.facetTitle ]
+            [ text (Util.trans key context.translations) ]
+        ; (if opened then
+             ul [ class' Style.facetItemsContainer ]
+               (Array.to_list (renderFacetItems ~key ~items ~filters))
+           else
+             noNode)
         ]
     in
     match f.items with
