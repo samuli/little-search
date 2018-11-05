@@ -433,7 +433,10 @@ let filters filters context =
           [ text (Printf.sprintf "%s: %s" label value) ] ) filters
   in
   div [] items
-  
+
+let blurSearchfield () =
+  [%bs.raw "document.getElementById(\"search-field\").blur() "]
+
 let view model context =
   div
     [ ]
@@ -442,8 +445,11 @@ let view model context =
           div [ class' Style.searchBoxWrapper  ]
             [ form
                 [ onCB "submit" ""
-                    (fun ev -> ev##preventDefault ();
-                               Some(OnSearch)) ]
+                    (fun ev ->
+                      ev##preventDefault ();
+                      let () = blurSearchfield () in
+                      Some(OnSearch))
+                ]
                 [
                   input'
                     [ id "search-field"
