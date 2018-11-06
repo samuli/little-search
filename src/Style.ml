@@ -363,7 +363,8 @@ let removeFilterLabel =
   
 let openFacets =
   style [
-    float `left
+      float `left
+    ; cursor `pointer
     ; backgroundColor (hex "fff700")
     ; padding2 ~h:(px 16) ~v:(px 6)
     ; border (px 3) `solid (hex "b9c500")
@@ -383,7 +384,7 @@ let facetsIconLabel =
   style [
       display `inlineBlock
     ; fontSize (em 1.2)
-    ; marginLeft (px 55)
+    ; marginLeft (px 55) 
     ; marginTop (px 8)
     ; verticalAlign `middle
     (* ; padding2 ~h:(em 1.0) ~v:(em 0.5) *)

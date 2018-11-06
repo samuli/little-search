@@ -492,10 +492,10 @@ let view model context =
                 ; div [ class' Style.filterTools ]
                     [
                       ( if hasResults model.results = true then
-                          div [ class' Style.openFacets]
+                          div [ class' Style.openFacets
+                              ; onClick OpenFacets ]
                             [
                               a [ class' Style.facetsIcon
-                                ; onClick OpenFacets
                                 ; title "label" ]
                                 [
                                   p [ class' Style.facetsIconLabel ]

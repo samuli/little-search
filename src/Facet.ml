@@ -76,24 +76,37 @@ let update ~model ~lookfor ~filters = function
             | (_, _) -> true)
           entries
       in
+      
       let cmds =
         List.map (fun (key, _facet) -> Cmd.msg (getFacets key)) opened
       in
 
-      (* toggle active but closed facets open *)
-      let activeButClosed =
-        List.filter (fun (key, _value) ->
-            not (List.exists
-              (fun (facetKey, _facetValue) -> facetKey = key) opened))
-          filters
-      in          
-      let cmds2 =
-        List.map (fun (key, _facet) ->
-            Cmd.msg (toggleFacet key)) activeButClosed
+      let closed =
+        List.filter (fun f1 ->
+            not (List.exists (fun f2 -> f1 = f2) opened))
+          entries
       in
-      
-      ( { model with lookfor; filters },
-        Cmd.batch (List.concat [ cmds; cmds2 ]) )  
+
+      (* toggle active but closed facets open *)
+      (* let activeButClosed =
+       *   List.filter (fun (key, _value) ->
+       *       not (List.exists
+       *         (fun (facetKey, _facetValue) -> facetKey = key) opened))
+       *     filters
+       * in           *)
+      (* let cmds2 =
+       *   List.map (fun (key, _facet) ->
+       *       Cmd.msg (toggleFacet key)) activeButClosed
+       * in *)
+      let facets = model.facets in
+      List.iter (fun (key, _a) ->
+          match (Js.Dict.get facets key) with
+          | Some (facet) ->
+             (Js.Dict.set facets key { facet with items = NotAskedType [||] });
+          | _ -> ()) closed;
+
+      ( { model with lookfor; filters; facets },
+        Cmd.batch cmds )  
   | CloseFacets ->
     let model = toggleFacetMenu ~mode:false ~model in
     ( model, Cmd.none )
@@ -110,7 +123,7 @@ let update ~model ~lookfor ~filters = function
      in
      ( { model with facets }, cmd)
   | ToggleFacetItem (_,_) ->
-    let model = toggleFacetMenu ~mode:false ~model in
+     let model = toggleFacetMenu ~mode:false ~model in
      ( model, Cmd.none)
   | GetFacets _-> (model, Cmd.none)
 
