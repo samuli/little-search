@@ -179,7 +179,7 @@ let view ~model ~context ~filters =
         div [ class' Style.facetHeader ] [
             h1 [ class' Style.facetHeading ]
               [ text (Util.trans "Narrow search" context.translations) ]
-           ; a [ class' Style.closeIcon
+           ; a [ class' Style.closeFacetsIcon
               ; onClick CloseFacets ] []
           ]
       ; facetList ~facets:model.facets ~filters ~context

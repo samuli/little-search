@@ -433,15 +433,47 @@ let filters filters context =
   let items =
     List.map (fun (key, value) ->
         let label = Util.trans key context.translations in
-        let value = Util.trans value context.translations in 
-        p [ onClick (RemoveFilter key) ]
-          [ text (Printf.sprintf "%s: %s" label value) ] ) filters
+        let value = Util.trans value context.translations in
+
+        div [
+            onClick (RemoveFilter key)
+          ; class' Style.removeFilter
+          ]
+          [
+            div [ class' Style.removeFilterIcon ] []
+          ; div [ class' Style.removeFilterLabel ]
+              [
+                p [ class' Style.filterType ]
+                  [ text (Printf.sprintf "%s:" label) ]
+              ; p [ class' Style.filterLabel]
+                  [ text value ]
+              ]
+          ]
+      ) filters
   in
-  div [] items
+  div [ class' Style.filterContainer ] items
 
 let blurSearchfield () =
   [%bs.raw "document.getElementById(\"search-field\").blur() "]
 
+let searchField ~lookfor ~context =
+  div [] [
+    input'
+      [ id "search-field"
+    ; class' Style.searchBox
+    ; type' "search"
+    ; name "lookfor"
+    ; value lookfor
+    ; onInput (fun str -> (OnChange str))
+      ] []            
+  ; input'
+      [ type' "submit"
+      ; class' Style.searchBoxSubmit
+      ; value (Util.trans "Search!" context.translations)
+      ]
+      []
+    ]
+  
 let view model context =
   div
     [ ]
@@ -456,28 +488,25 @@ let view model context =
                       Some(OnSearch))
                 ]
                 [
-                  input'
-                    [ id "search-field"
-                    ; class' Style.searchBox
-                    ; type' "search"
-                    ; name "lookfor"
-                    ; value model.searchParams.lookfor
-                    ; onInput (fun str -> (OnChange str))
-                    ] []            
-                ; input'
-                    [ type' "submit"
-                    ; class' Style.searchBoxSubmit
-                    ; value (Util.trans "Search!" context.translations)
+                  (searchField ~lookfor:model.searchParams.lookfor ~context)
+                ; div [ class' Style.filterTools ]
+                    [
+                      ( if hasResults model.results = true then
+                          div [ class' Style.openFacets]
+                            [
+                              a [ class' Style.facetsIcon
+                                ; onClick OpenFacets
+                                ; title "label" ]
+                                [
+                                  p [ class' Style.facetsIconLabel ]
+                                    [ text (Util.trans "Narrow search" context.translations) ]
+                                ]
+                            ]
+                        else
+                          noNode
+                      )
+                    ; (filters model.searchParams.filters context)
                     ]
-                    []
-                ; (filters model.searchParams.filters context)
-                ; ( if hasResults model.results = true then
-                      a
-                        [ onClick OpenFacets ]
-                        [ text (Util.trans "Narrow search" context.translations) ]
-                    else
-                      noNode
-                  )
                 ]
             ]
         ]

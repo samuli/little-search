@@ -262,7 +262,7 @@ let recordNavigation ~(record:Types.record) ~(context:context) =
   div [ class' Style.paginationContainer]
     [
       div [] [
-          a [ class' Style.closeIcon
+          a [ class' Style.closeRecordIcon
             ; onClick CloseRecord ] []
         ]
     ; (match pagination with

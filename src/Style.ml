@@ -4,6 +4,7 @@ let basePadding = em 1.0
 let textColor = darkgrey
 let greyLight = hex "dae1e7"
 let greyLighter = hex "f1f5f8"
+let btnBackground = hex "d6d6d6"
 
 let init =
   global "body" [ margin (px 0) ];
@@ -118,9 +119,9 @@ let searchBoxSubmit =
       border (px 2) `solid black
     ; padding (em 0.8)
     ; margin2 ~v:(em 1.0) ~h:(px 0)
-    ; borderRadius (em 0.5)
+    (* ; borderRadius (em 0.5) *)
     ; fontSize (em 1.3)
-    ; backgroundColor (hex "d6d6d6")
+    ; backgroundColor btnBackground
     ; cursor `pointer
     ]
   
@@ -304,12 +305,88 @@ let paginateInfo =
     ]
   
 let closeIcon =
-  style [
+  [
       cursor `pointer
-    ; float `right
     ; width (px 40)
     ; height (px 40)
+    ; backgroundRepeat `noRepeat
     ; backgroundImage (url "/icons/times-circle-regular.svg")
+    ]
+
+let searchIcon =
+  [
+      cursor `pointer
+    ; width (px 40)
+    ; height (px 40)
+    ; backgroundRepeat `noRepeat
+    ; backgroundImage (url "/icons/search-solid.svg")
+    ]
+
+  
+let closeFacetsIcon =
+  style (List.append closeIcon [float `right])
+
+let closeRecordIcon = closeFacetsIcon 
+
+let filterTools =
+  style [
+      overflow `hidden
+    ]
+  
+let filterContainer =
+  style [
+      marginLeft (em 0.5)
+    ; float `left
+    ; marginTop (px 6)
+    ]
+
+let filterType =
+  style [ fontWeight 700 ]
+
+let filterLabel = style []
+                      
+let removeFilter =
+  style [
+      (* display `inlineBlock *)
+      cursor `pointer
+    ; margin2 ~v:(px 0) ~h:(px 10)
+    ]
+
+let removeFilterIcon =
+  style (List.append closeIcon [ display `inlineBlock ])
+
+let removeFilterLabel =
+  style [
+      display `inlineBlock
+    ; marginLeft (px 10)
+    ]
+  
+let openFacets =
+  style [
+    float `left
+    ; backgroundColor (hex "fff700")
+    ; padding2 ~h:(px 16) ~v:(px 6)
+    ; border (px 3) `solid (hex "b9c500")
+    ]
+   
+let facetsIcon =
+  style [
+      cursor `pointer
+    ; height (px 40)
+    ; backgroundImage (url "/icons/sliders-h-solid.svg")
+    ; display `inlineBlock
+    ; verticalAlign `middle
+    ; backgroundRepeat `noRepeat
+    ]
+
+let facetsIconLabel =
+  style [
+      display `inlineBlock
+    ; fontSize (em 1.2)
+    ; marginLeft (px 55)
+    ; marginTop (px 8)
+    ; verticalAlign `middle
+    (* ; padding2 ~h:(em 1.0) ~v:(em 0.5) *)
     ]
 
 type arrowDir =
@@ -335,17 +412,20 @@ let arrowIcon (dir:arrowDir) =
     ]
 
 let nextPage ~loading =
-  style ([
+  style [
         fontSize (em 1.5)
       ; textAlign `center
       ; padding (em 0.5)
       ; margin (em 1.3)
-      ; backgroundColor greyLight
-      ; borderRadius (rem 0.5)] @
-           (if loading then [] else
-              [ 
-                cursor `pointer
-    ]))
+      ; backgroundColor btnBackground
+      ; cursor `pointer
+      ; border (px 2) `solid black
+
+      (* ; borderRadius (rem 0.5)] @
+       *      (if loading then [] else
+       *         [ 
+       *           cursor `pointer *)
+      ]
 
 let nextPageLabel =
   style [
