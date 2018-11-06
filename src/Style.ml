@@ -258,11 +258,16 @@ let recordLinks = style [ marginLeft (em 1.0); listStyleType `circle ]
 let recordLink = style [ listStyleType `disc; wordBreak `breakAll ]
 
 let recordImages = style [ marginTop (em 1.0) ]
+
+let recordImageContainer =
+  style [
+      border (px 1) `solid greyLight
+    ]
+  
 let recordImage =
   style [
-    marginTop (em 0.5);
-    minHeight (px 200);
-    border (px 1) `solid greyLight;
+    marginTop (em 0.5)
+    ; minHeight (px 200)
     ]
 let recordAuthors = style [ fontWeight 400; marginRight (em 0.5) ]
 let recordPublisher = style [ marginRight (em 0.3); fontSize (em 1.0) ]
