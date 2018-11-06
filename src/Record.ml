@@ -98,16 +98,22 @@ let images recId imgs =
    | Some images ->
       let item i path imgId =
         let path = Finna.baseUrl ^ path in
-        let css = Style.recordImage in
         let attrs =
-          [ id imgId; class' css;
+          [ id imgId; class' (Style.recordImage ~loading:true)
+            ; (onCB "load" "" (fun e ->
+                   (match Js.Undefined.toOption e##target with
+                    | Some target -> target##setAttribute "class" "loaded";
+                    | _ -> ());
+                   None))            
           ] @
             (* load first images immediately and the rest with inView.js *)
             (if i < 4 then [ src path; noProp ] else [ noProp; href path ])
         in
         
         li [ class' Style.recordImageContainer]
-          [ img ~unique:imgId attrs [] ]
+          [
+            img ~unique:imgId attrs []
+          ]
       in
       (* hash record.id to get a working querySelector for inView.js *)
       let imgId i =

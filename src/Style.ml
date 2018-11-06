@@ -261,14 +261,36 @@ let recordImages = style [ marginTop (em 1.0) ]
 
 let recordImageContainer =
   style [
-      border (px 1) `solid greyLight
+    ]
+
+let recordImageSpinner =
+  style [
+    width (px 40)
+    ; height (px 40)
+    ; backgroundImage (url "/icons/spinner-solid.svg")
+    (* ; position `absolute *)
+    ; marginLeft (`calc (`sub, (pct 50.0), (px 40)))
+    ; marginBottom (`calc (`sub, (px 0), (px 55)))
+    ; paddingTop (px 20)
+    (* ; backgroundPosition `px 0 *)
+    ; backgroundRepeat `noRepeat
+    ; height (px 50)
     ]
   
-let recordImage =
-  style [
-    marginTop (em 0.5)
-    ; minHeight (px 200)
-    ]
+let recordImage ~loading =
+  style (
+      List.append
+        [
+          width (pct 100.0)
+        ; minHeight (px 200)
+        ]        
+        (if loading = true then
+           [ border (px 1) `solid greyLight ]
+         else
+           []
+        )    
+    )
+
 let recordAuthors = style [ fontWeight 400; marginRight (em 0.5) ]
 let recordPublisher = style [ marginRight (em 0.3); fontSize (em 1.0) ]
 let recordYear = style [ fontSize (em 1.0) ]
