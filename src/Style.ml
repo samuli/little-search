@@ -94,7 +94,7 @@ let statusStyle ~error =
   let bkgColor = if error then red else white in
   style [
       padding basePadding;
-      margin2 ~h: (px 0) ~v: basePadding;
+      margin basePadding;
       backgroundColor bkgColor
     ]
 
@@ -114,16 +114,22 @@ let searchBoxWrapper =
     ; borderBottom (px 2) `solid black    
     ]
 
-let searchBoxSubmit =
-  style [
-      border (px 2) `solid black
-    ; padding (em 0.8)
-    ; margin2 ~v:(em 1.0) ~h:(px 0)
-    (* ; borderRadius (em 0.5) *)
-    ; fontSize (em 1.3)
-    ; backgroundColor btnBackground
-    ; cursor `pointer
-    ]
+let searchBoxSubmit ~active =
+  style 
+      (List.append
+        [
+          border (px 2) `solid black
+        ; padding (em 0.8)
+        ; margin2 ~v:(em 1.0) ~h:(px 0)
+        (* ; borderRadius (em 0.5) *)
+        ; fontSize (em 1.3)
+        ; backgroundColor btnBackground
+        ] (if active = true then 
+             [ cursor `pointer ]
+           else
+             [] )
+      )
+    
   
 let facetModal =
   style [
@@ -361,19 +367,21 @@ let removeFilterLabel =
     ; marginLeft (px 10)
     ]
   
-let openFacets =
-  style [
+let openFacets ~active =
+  style (List.append [
       float `left
-    ; cursor `pointer
     ; backgroundColor (hex "fff700")
     ; padding2 ~h:(px 16) ~v:(px 6)
     ; border (px 3) `solid (hex "b9c500")
-    ]
+    ] (if active then
+         [ cursor `pointer ]
+       else
+         [ opacity 0.6]))
+
    
 let facetsIcon =
   style [
-      cursor `pointer
-    ; height (px 40)
+    height (px 40)
     ; backgroundImage (url "/icons/sliders-h-solid.svg")
     ; display `inlineBlock
     ; verticalAlign `middle
@@ -387,7 +395,6 @@ let facetsIconLabel =
     ; marginLeft (px 55) 
     ; marginTop (px 8)
     ; verticalAlign `middle
-    (* ; padding2 ~h:(em 1.0) ~v:(em 0.5) *)
     ]
 
 type arrowDir =
@@ -413,20 +420,18 @@ let arrowIcon (dir:arrowDir) =
     ]
 
 let nextPage ~loading =
-  style [
+  style (List.append
+    [
         fontSize (em 1.5)
       ; textAlign `center
       ; padding (em 0.5)
       ; margin (em 1.3)
       ; backgroundColor btnBackground
-      ; cursor `pointer
       ; border (px 2) `solid black
-
-      (* ; borderRadius (rem 0.5)] @
-       *      (if loading then [] else
-       *         [ 
-       *           cursor `pointer *)
-      ]
+    ] (if loading then [] else [
+           cursor `pointer
+    ])
+    )
 
 let nextPageLabel =
   style [

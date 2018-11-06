@@ -144,7 +144,24 @@ let resultsCallback ~inBkg ~searchParams =
     GotResultsInBackground
   else
     (PageLoaded (SearchRoute searchParams))
-    
+  
+let isPageLoading ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) =
+  Js.log ("isloading", pageNum);
+  match Js.Dict.get resultPages (string_of_int pageNum) with
+  | Some page -> begin
+      match page.results with
+      | LoadingType _ -> Loading
+      | Success p -> Success p
+      | NotAsked -> NotAsked
+      | _ -> Error ""
+    end
+  | _ -> NotAsked
+
+let isLoading ~model =
+  match model.nextResult with
+  | LoadingType _ -> true
+  | _ -> false
+
 let update model context = function
   | OnSearch ->
      let searchParams = { model.searchParams with page = 0 } in
@@ -157,36 +174,39 @@ let update model context = function
        [NoUpdate]
      )
   | Search params ->
-     let newSearch =
-       match model.lastSearch with
-       | None -> true
-       | Some query -> not (query == params.lookfor) in
-     let page = params.page in
-     let nextResult = { page; results = Loading } in
-     let (results, onResults) =
-       if newSearch then
-         (initResults (), (resultsCallback ~inBkg:false ~searchParams:params))
-       else
-         let pages = model.results.pages in
-         Js.Dict.set pages (string_of_int page) nextResult;
-         ( { model.results with pages }, model.onResults )
-     in
-     let nextResult = LoadingType nextResult in
-     let model =
-       { model with results;
-                    nextResult;
-                    onResults;
-                    searchParams = params; }
-     in
-     let cmd = getSearchCmd ~params ~lng:context.language in
-     ( model, cmd, [NoUpdate] )
-
+     if isLoading ~model = true then
+       ( model, Cmd.none, [NoUpdate] )
+     else
+       let newSearch =
+         match model.lastSearch with
+         | None -> true
+         | Some query -> not (query == params.lookfor) in
+       let page = params.page in
+       let nextResult = { page; results = Loading } in
+       let (results, onResults) =
+         if newSearch then
+           (initResults (), (resultsCallback ~inBkg:false ~searchParams:params))
+         else
+           let pages = model.results.pages in
+           Js.Dict.set pages (string_of_int page) nextResult;
+           ( { model.results with pages }, model.onResults )
+       in
+       let nextResult = LoadingType nextResult in
+       let model =
+         { model with results;
+                      nextResult;
+                      onResults;
+                      searchParams = params; }
+       in
+       let cmd = getSearchCmd ~params ~lng:context.language in
+       ( model, cmd, [NoUpdate] )
+       
   | SearchMore (page, searchInBkg) ->
      begin
        match (model.nextResult) with
        | (LoadingType _) -> (model, Cmd.none, [NoUpdate])
        | _ ->
-          let nextResult = (LoadingType { page; results = Loading }) in
+          (* let nextResult = (LoadingType { page; results = Loading }) in *)
           let searchParams =
             { model.searchParams with page } in
           let (cmd, onResults) =
@@ -196,7 +216,7 @@ let update model context = function
             else
               ( Router.openUrl (Router.routeToUrl (SearchRoute searchParams)), cb)
           in
-          ( { model with searchParams; nextResult; onResults }, cmd, [NoUpdate] )
+          ( { model with searchParams; onResults }, cmd, [NoUpdate] )
      end
        
   | OnChange lookfor ->
@@ -217,6 +237,8 @@ let update model context = function
      ( { model with onResults }, Cmd.none, [updateResultInfo; model.onResults] )
   | GotResults (Error e) ->
      let result = Error (Http.string_of_error e) in
+     Js.log ("error", result);
+
      let model = appendResults ~model ~newResults: result in
      let onResults =
        resultsCallback ~inBkg:false ~searchParams:model.searchParams in
@@ -323,28 +345,20 @@ let renderResultItem ~(r:Types.record) ~visitedRecords =
         ]
     ]
 
-let isPageLoading ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) =
-  match Js.Dict.get resultPages (string_of_int pageNum) with
-  | Some page -> begin
-      match page.results with
-      | LoadingType _ -> Loading
-      | Success p -> Success p
-      | NotAsked -> NotAsked
-      | _ -> Error ""
-    end
-  | _ -> NotAsked
   
 let resultPageLoadNeighbor
+      ~model
       ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) ~context ~dir =
 
-  let isLoading = isPageLoading ~pageNum ~resultPages in
-  match isLoading with
+  let pageLoading = isPageLoading ~pageNum ~resultPages in
+  match pageLoading with
   | Loading | NotAsked ->
      begin
        let arrow = if dir = Backward then Style.ArrowUp else Style.ArrowDown in
+       let isLoading = isLoading ~model in
        div
-         [ class' (Style.nextPage ~loading:(isLoading = Loading))
-         ; onClick (SearchMore (pageNum, false))
+         [ class' (Style.nextPage ~loading:isLoading)
+         ; (if isLoading then noProp else onClick (SearchMore (pageNum, false)))
          ]
          [
            p []
@@ -370,6 +384,7 @@ let renderResultPage
   div [] [
       (if pageNum > 0 then
          resultPageLoadNeighbor
+           ~model
            ~pageNum:(pageNum-1)
            ~resultPages:model.results.pages
            ~context
@@ -381,6 +396,7 @@ let renderResultPage
         [ div [] items ]
     ; (if pageNum < (model.results.pageCount-1) then
          resultPageLoadNeighbor
+           ~model
            ~pageNum:(pageNum+1)
            ~resultPages:model.results.pages
            ~context
@@ -404,7 +420,10 @@ let resultPage ~(page:searchResultPageType) ~model ~context =
       | (Success res, pageNum) -> renderResultPage pageNum res model context
       | _ -> Html.noNode
 
-  
+
+let hasResults (results:Types.searchResultsType) =
+  if results.count > 0 then true else false
+
 let results ~results ~model ~context =
   let pageNums = Js.Dict.keys results.pages in
   Array.sort (fun a b ->
@@ -413,11 +432,15 @@ let results ~results ~model ~context =
       if a > b then 1 else -1) pageNums;
   div []
     [
-      h3 [ class' Style.searchResultsInfo ]
-        [ text (Printf.sprintf "%s: %d"
-                  (Util.trans "Results" context.translations)
-                  results.count)
-        ]
+      (if hasResults results then
+         h3 [ class' Style.searchResultsInfo ]
+           [ text (Printf.sprintf "%s: %d"
+                     (Util.trans "Results" context.translations)
+                     results.count)
+           ]
+       else
+         noNode
+      )
     ; div [] 
         ((Array.map (fun pageNum->
               match Js.Dict.get results.pages pageNum with
@@ -426,8 +449,19 @@ let results ~results ~model ~context =
          |> Array.to_list)
     ]
   
-let hasResults (results:Types.searchResultsType) =
-  if results.count > 0 then true else false
+
+let openFilters ~results ~context =
+  let results = hasResults results in
+  div [ class' (Style.openFacets ~active:results)
+      ; (if results = true then onClick OpenFacets else noProp) ]
+    [
+      a [ class' Style.facetsIcon
+        ; title "label" ]
+        [
+          p [ class' Style.facetsIconLabel ]
+            [ text (Util.trans "Narrow search" context.translations) ]
+        ]
+    ]
 
 let filters filters context =
   let items =
@@ -456,7 +490,7 @@ let filters filters context =
 let blurSearchfield () =
   [%bs.raw "document.getElementById(\"search-field\").blur() "]
 
-let searchField ~lookfor ~context =
+let searchField ~lookfor ~context ~disable =
   div [] [
     input'
       [ id "search-field"
@@ -468,7 +502,8 @@ let searchField ~lookfor ~context =
       ] []            
   ; input'
       [ type' "submit"
-      ; class' Style.searchBoxSubmit
+      ; class' (Style.searchBoxSubmit ~active:(not disable))
+      ; Attributes.disabled disable
       ; value (Util.trans "Search!" context.translations)
       ]
       []
@@ -488,40 +523,27 @@ let view model context =
                       Some(OnSearch))
                 ]
                 [
-                  (searchField ~lookfor:model.searchParams.lookfor ~context)
+                  (searchField
+                     ~lookfor:model.searchParams.lookfor
+                     ~context
+                     ~disable:(isLoading ~model))
                 ; div [ class' Style.filterTools ]
                     [
-                      ( if hasResults model.results = true then
-                          div [ class' Style.openFacets
-                              ; onClick OpenFacets ]
-                            [
-                              a [ class' Style.facetsIcon
-                                ; title "label" ]
-                                [
-                                  p [ class' Style.facetsIconLabel ]
-                                    [ text (Util.trans "Narrow search" context.translations) ]
-                                ]
-                            ]
-                        else
-                          noNode
-                      )
+                      (openFilters ~results:model.results ~context)
                     ; (filters model.searchParams.filters context)
                     ]
                 ]
             ]
         ]
-    ; (if hasResults model.results then
-         begin
-           div []
-             [
-               results ~results:model.results ~model ~context
-             ; (Facet.view
-                  ~model: model.facetModel
-                  ~context: context
-                  ~filters:model.searchParams.filters |> App.map facetMsg)
-             ]
-         end
-      else
-        noNode)
+
+        ; div []
+            [
+              results ~results:model.results ~model ~context
+            ; (Facet.view
+                 ~model: model.facetModel
+                 ~context: context
+                 ~filters:model.searchParams.filters |> App.map facetMsg)
+            ]
+    
     ]
 
