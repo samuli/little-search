@@ -430,7 +430,7 @@ let results ~results ~model ~context =
       if a > b then 1 else -1) pageNums;
   div []
     [
-      (if hasResults results then
+      (if (not (isLoading ~model)) || hasResults results then
          h3 [ class' Style.searchResultsInfo ]
            [ text (Printf.sprintf "%s: %d"
                      (Util.trans "Results" context.translations)
