@@ -96,6 +96,9 @@ let hash: (string -> string ) = [%bs.raw fun s -> "
    0);
 "]
 
+                              
+external toLocaleString : int -> string = "" [@@bs.send]
+
                                       
 
 

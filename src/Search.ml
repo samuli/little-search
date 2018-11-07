@@ -430,9 +430,9 @@ let results ~results ~model ~context =
     [
       (if (not (isLoading ~model)) || hasResults results then
          h3 [ class' Style.searchResultsInfo ]
-           [ text (Printf.sprintf "%s: %d"
+           [ text (Printf.sprintf "%s: %s"
                      (Util.trans "Results" context.translations)
-                     results.count)
+                     (Util.toLocaleString results.count))
            ]
        else
          noNode

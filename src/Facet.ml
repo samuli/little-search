@@ -150,7 +150,7 @@ let facetList ~facets ~filters ~context =
                   ~type'
                   ~translations:context.translations
     in
-    let label = Printf.sprintf "%s: (%d)" label item.count in
+    let label = Printf.sprintf "%s: (%s)" label (Util.toLocaleString item.count) in
     li [
         onClick (ToggleFacetItem ((not isActive), ( key, item.value )))
       ; class' (Style.facetItem isActive)
