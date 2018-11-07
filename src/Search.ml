@@ -181,15 +181,13 @@ let update model context = function
          match model.lastSearch with
          | None -> true
          | Some query -> not (query == params.lookfor) in
-       let page = params.page in
+       let page = params.page in       
        let nextResult = { page; results = Loading } in
        let (results, onResults) =
          if newSearch then
            (initResults (), (resultsCallback ~inBkg:false ~searchParams:params))
          else
-           let pages = model.results.pages in
-           Js.Dict.set pages (string_of_int page) nextResult;
-           ( { model.results with pages }, model.onResults )
+           ( model.results, model.onResults )
        in
        let nextResult = LoadingType nextResult in
        let model =
