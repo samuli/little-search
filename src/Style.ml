@@ -15,9 +15,9 @@ let init =
     [ margin2 ~h: (px 0) ~v: (em 0.2); lineHeight (em 1.2)];
   global "a" [ textDecoration `none ];
   
-  global "h1" [ fontWeight 400; fontSize (em 1.5) ];
+  global "h1" [ fontWeight 400; fontSize (em 1.4) ];
   global "h2" [ fontWeight 400; fontSize (em 1.3) ];
-  global "h3" [ fontWeight 300; fontSize (em 1.3) ];
+  global "h3" [ fontWeight 300; fontSize (em 1.2) ];
   global "p" [ fontWeight 300; fontSize (em 1.0) ];
   global "a" [
       color (hex "005999")
@@ -229,7 +229,7 @@ let recordListBkg ~visited ~lastVisited =
   (* let bkgColor = if visited then hex "eff8ff" else white in *)
   let borderCol = match (visited,lastVisited) with
     | (_,true) -> blue
-    | (true,_) -> hex "ef447b"
+    | (true,_) -> hex "a7abc5"
     | _ -> white
   in
   style [
@@ -265,11 +265,15 @@ let recordLinks =
       marginTop (em 1.0)
     ; backgroundColor (hex "dadada")
     ; padding (em 0.5)
+    ; lineHeight (em 1.4)
     ]
   
 let recordLink =
   style [
       wordBreak `breakAll
+        ; whiteSpace `nowrap
+        ; overflow `hidden
+        ; textOverflow `ellipsis
     ]
 
 let recordImages = style [ marginTop (em 1.0) ]
@@ -420,22 +424,24 @@ let removeFilterLabel =
   
 let openFacets ~active =
   style (List.append [
-      float `left
-    ; backgroundColor (hex "fff700")
-    ; padding2 ~h:(px 16) ~v:(px 6)
-    ; marginRight (em 1.0)
-    ; marginBottom (em 0.5)
-    ; border (px 3) `solid (hex "b9c500")
-    ; borderRadius (em 0.2)
-    ] (if active then
-         [ cursor `pointer ]
-       else
-         [ opacity 0.6]))
+             float `left
+           ; backgroundColor (hex "fff700")
+           ; padding2 ~h:(px 16) ~v:(px 6)
+           ; marginRight (em 1.0)
+           ; marginBottom (em 0.5)
+           ; border (px 3) `solid (hex "b9c500")
+           ; borderRadius (em 0.2)
+           ] (if active then
+                [ cursor `pointer ]
+              else
+                [ opacity 0.6])
+    )
 
    
 let facetsIcon =
   style [
-    height (px 40)
+      height (px 40)
+    ; color black
     ; backgroundImage (url "/icons/sliders-h-solid.svg")
     ; display `inlineBlock
     ; verticalAlign `middle
