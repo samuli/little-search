@@ -450,14 +450,15 @@ let results ~results ~model ~context =
 
 let openFilters ~results ~context =
   let results = hasResults results in
+  let label = (Util.trans "Narrow search" context.translations) in
   div [ class' (Style.openFacets ~active:results)
       ; (if results = true then onClick OpenFacets else noProp) ]
     [
       a [ class' Style.facetsIcon
-        ; title "label" ]
+        ; title label ]
         [
           p [ class' Style.facetsIconLabel ]
-            [ text (Util.trans "Narrow search" context.translations) ]
+            [ text label ]
         ]
     ]
 

@@ -19,7 +19,10 @@ let init =
   global "h2" [ fontWeight 400; fontSize (em 1.3) ];
   global "h3" [ fontWeight 300; fontSize (em 1.3) ];
   global "p" [ fontWeight 300; fontSize (em 1.0) ];
-  global "a" [ color black ];
+  global "a" [
+      color (hex "005999")
+      ]
+  ;
   global 
     "ul, li"
     [ padding (px 0); margin (px 0); listStyleType `none ];
@@ -230,14 +233,17 @@ let recordListBkg ~visited ~lastVisited =
     | _ -> white
   in
   style [
-      borderBottom (px 1) solid greyLight;
-      borderLeft (px 4) solid borderCol;
-      padding2 ~v: (em 0.5) ~h: (em 1.0);
-      (* backgroundColor bkgColor; *)
-      hover [ backgroundColor greyLighter];
-      cursor `pointer
+      borderBottom (px 1) solid greyLight
+    ; borderLeft (px 4) solid borderCol
+    ; padding2 ~v: (em 0.5) ~h: (em 1.0)
+    ; color black
+    ; hover [ backgroundColor greyLighter]
+    ; cursor `pointer
     ]
 
+let recordRowPadding = (em 0.5)
+let recordRow = style [ marginTop recordRowPadding ]
+          
 let recordFormat =
   style [
     display `inlineBlock;
@@ -254,8 +260,17 @@ let recordContent =
       padding basePadding
     ]
 
-let recordLinks = style [ marginLeft (em 1.0); listStyleType `circle ]
-let recordLink = style [ listStyleType `disc; wordBreak `breakAll ]
+let recordLinks =
+  style [
+      marginTop (em 1.0)
+    ; backgroundColor (hex "dadada")
+    ; padding (em 0.5)
+    ]
+  
+let recordLink =
+  style [
+      wordBreak `breakAll
+    ]
 
 let recordImages = style [ marginTop (em 1.0) ]
 
@@ -291,12 +306,22 @@ let recordImage ~loading =
         )    
     )
 
-let recordAuthors = style [ fontWeight 400; marginRight (em 0.5) ]
+let recordAuthors =
+  style [
+      fontWeight 400
+    ; marginRight (em 0.5)
+    ; marginTop recordRowPadding
+    ]
+  
 let recordPublisher = style [ marginRight (em 0.3); fontSize (em 1.0) ]
 let recordYear = style [ fontSize (em 1.0) ]
 let recordPublished = style [ marginRight (em 0.5) ]
 let recordSummary = style [ fontStyle `italic ]
-let recordFinnaLink = style [ color blue ]
+let recordFinnaLink =
+  style [
+      color blue
+    ; marginTop (em 1.0)
+    ]
                   
 let languageMenuContainer =
   style [
@@ -440,8 +465,8 @@ let arrowIcon (dir:arrowDir) =
     "/icons/arrow-alt-circle-" ^ file ^ "-regular.svg"
   in
   style [
-      cursor `pointer
-    ; width (px 40)
+
+     width (px 40)
     ; height (px 40)
     ; backgroundImage (url file)
     ; display `inlineBlock
@@ -466,5 +491,12 @@ let nextPage ~loading =
 let nextPageLabel =
   style [
       marginRight (em 0.5)
+    ]
+
+let textLink =
+  style [
+      before [
+          contentRule("> ")
+        ]
     ]
 

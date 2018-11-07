@@ -206,19 +206,30 @@ let urlList (r:Types.record) =
        | Some urls when Array.length urls > 0 -> urls |> Array.to_list
        | _ -> [])
   in
-  ul [ class' Style.recordLinks ]
-    (List.map (fun (url:Types.onlineUrl) ->
-         match (url.label, url.url) with
-         | (Some label, Some url) ->
-            li [ class' Style.recordLink ] [ a [ href url ] [ text label ] ]
-         | (None, Some url) ->
-            li [ class' Style.recordLink ] [ a [ href url ] [ text url ] ]
-         | _ -> noNode) urls)
-
+  if List.length urls > 0 then
+    ul [ class' Style.recordLinks ]
+      (List.map (fun (url:Types.onlineUrl) ->
+           match (url.label, url.url) with
+           | (Some label, Some url) ->
+              li
+                [ class' Style.recordLink ]
+                [ a
+                    [ class' Style.textLink; href url ]
+                    [ text label ] ]
+           | (None, Some url) ->
+              li
+                [ class' Style.recordLink ]
+                [ a [ class' Style.textLink; href url ]
+                    [ text url ] ]
+           | _ -> noNode) urls)
+  else
+    noNode
+  
 let finnaLink id context =
-  p []
-    [ a [ href (Finna.getRecordLink id)
-        ; class' Style.recordFinnaLink ]
+  p [ class' Style.recordFinnaLink ]
+    [ a
+        [ href (Finna.getRecordLink id)
+        ; class' Style.textLink ]
         [ text (Util.trans "View in Finna" context.translations) ] ]
 
 let recordNavigation ~(record:Types.record) ~(context:context) =
@@ -297,7 +308,7 @@ let viewRecord ~(r:Types.record) ~context =
         ; summary r.summary
         ; authors r.authors
         ; publishInfo r
-        ; div [] [
+        ; div [ class' Style.recordRow ] [
               formats r.formats
             ; buildings r.buildings
             ]
