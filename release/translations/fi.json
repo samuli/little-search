@@ -1,5 +1,7 @@
 {
-    "online_boolean": "Saatavilla verkossa",
+    "online_boolean": "Saatavuus",
+    "online_boolean_1": "Verkkoaineistot",
+    
     "format": "Aineistotyyppi",
     "building": "Organisaatio",
     "language": "Kieli",

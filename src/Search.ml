@@ -466,8 +466,18 @@ let openFilters ~results ~context =
 let filters filters context =
   let items =
     List.map (fun (key, value) ->
+        let type' =
+          if key == "online_boolean" then
+            FacetBoolean else FacetNormal
+        in
         let label = Util.trans key context.translations in
-        let value = Util.trans value context.translations in
+        let value =
+          Facet.getFacetLabel
+            ~translations:context.translations
+            ~key
+            ~value
+            ~type'
+        in
 
         div [
             onClick (RemoveFilter key)

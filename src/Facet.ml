@@ -131,23 +131,38 @@ let isFacetActive ~filters ~facetKey ~facetValue =
   List.exists
     (fun (key, value) -> (facetKey = key && facetValue = value))
     filters
+
+let getFacetLabel ~key ~value ~type' ~translations =
+    match type' with
+      | FacetNormal -> Util.trans value translations
+      | FacetBoolean ->
+         let key = Printf.sprintf "%s_%s" key value in
+         Util.trans key translations
   
 let facetList ~facets ~filters ~context =
-  let renderFacetItem ~key ~(item:Types.facetItem) ~filters =
+  let renderFacetItem ~key ~type' ~(item:Types.facetItem) ~filters =
     let isActive =
       isFacetActive ~filters ~facetKey:key ~facetValue:item.value
     in
+    let label = getFacetLabel
+                  ~key
+                  ~value:item.value
+                  ~type'
+                  ~translations:context.translations
+    in
+    let label = Printf.sprintf "%s: (%d)" label item.count in
     li [
         onClick (ToggleFacetItem ((not isActive), ( key, item.value )))
       ; class' (Style.facetItem isActive)
       ]
       [
-        h3 [ class' (Style.facetLabel ~active:isActive)]
-          [ text (item.translated ^ (Printf.sprintf " (%d)" item.count)) ]
+        h3
+          [ class' (Style.facetLabel ~active:isActive)]
+          [ text label ]
       ]
   in  
-  let renderFacetItems ~key ~items ~filters =
-    Array.map (fun item -> renderFacetItem ~key ~item ~filters) items
+  let renderFacetItems  ~key ~type' ~items ~filters =
+    Array.map (fun item -> renderFacetItem ~key ~type' ~item ~filters) items
   in
   let facet ~f ~context =
     let renderFacet ~opened ~key ~items ~loading ~filters =      
@@ -165,7 +180,8 @@ let facetList ~facets ~filters ~context =
             [ text (Util.trans key context.translations) ]
         ; (if opened then
              ul [ class' Style.facetItemsContainer ]
-               (Array.to_list (renderFacetItems ~key ~items ~filters))
+               (Array.to_list
+                  (renderFacetItems ~key ~type':f.type' ~items ~filters))
            else
              noNode)
         ]

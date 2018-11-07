@@ -1,5 +1,7 @@
 {
-    "online_boolean": "Available online",
+    "online_boolean": "Availability",
+    "online_boolean_1": "Online material",
+
     "format": "Content type",
     "building": "Organization",
     "language": "Language",
