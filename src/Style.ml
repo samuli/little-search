@@ -325,6 +325,7 @@ let paginationContainer =
       overflow `hidden
     ; padding2 ~v:(em 0.5) ~h:basePadding
     ; borderBottom (px 1) `solid (hex "d6d6d6")
+    ; padding2 ~h:(px 0) ~v:(em 0.5)
     ]
   
 let paginateInfo =
@@ -334,7 +335,7 @@ let paginateInfo =
     ; marginLeft (em 1.0)
     ; marginRight (em 1.0)
     ; verticalAlign `middle
-    ; padding2 ~h:(em 1.0) ~v:(em 0.5)
+    ; padding2 ~h:(em 0.5) ~v:(px 0)
     ]
   
 let closeIcon =
@@ -368,8 +369,7 @@ let filterTools =
   
 let filterContainer =
   style [
-      marginLeft (em 0.5)
-    ; float `left
+      float `left
     ; marginTop (px 6)
     ]
 
@@ -382,7 +382,6 @@ let removeFilter =
   style [
       (* display `inlineBlock *)
       cursor `pointer
-    ; margin2 ~v:(px 0) ~h:(px 10)
     ]
 
 let removeFilterIcon =
@@ -399,7 +398,10 @@ let openFacets ~active =
       float `left
     ; backgroundColor (hex "fff700")
     ; padding2 ~h:(px 16) ~v:(px 6)
+    ; marginRight (em 1.0)
+    ; marginBottom (em 0.5)
     ; border (px 3) `solid (hex "b9c500")
+    ; borderRadius (em 0.2)
     ] (if active then
          [ cursor `pointer ]
        else
@@ -455,6 +457,7 @@ let nextPage ~loading =
       ; margin (em 1.3)
       ; backgroundColor btnBackground
       ; border (px 2) `solid black
+      ; borderRadius (em 0.2)
     ] (if loading then [] else [
            cursor `pointer
     ])

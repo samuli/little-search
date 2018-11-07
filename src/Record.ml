@@ -233,51 +233,58 @@ let recordNavigation ~(record:Types.record) ~(context:context) =
 
   let renderPagination pagination =
     let loadBkgProp = (Vdom.prop "load-in-bkg" "1") in
-    div [] [
-        (* Set a dummy attribute for background loading paginate links so that the vdom notices that they differ from normal paginate links... *)
-        (let label = (Util.trans "Previous" context.translations) in
-         match pagination.prev with
-         | PaginateRecordCmd recId ->
-            a [ class' (Style.arrowIcon Style.ArrowLeft)
-              ; href (Router.routeToUrl (RecordRoute recId))
-              ; title label ] []
-         | PaginatePrevCmd (page, recId) ->
-            a [ class' (Style.arrowIcon Style.ArrowLeft)
-              ; loadBkgProp
-              ; onClick (RecordPaginate (page, (Navigate (recId, Backward))))
-              ; title label ] []
-         | _j -> noNode)
-      ; (if resultCount > 0 then
-           p [ class' Style.paginateInfo]
-             [ text (Printf.sprintf "%d / %d" (pagination.ind+1) resultCount) ]
-         else
-           noNode)
-      ; (
-        let label = (Util.trans "Next" context.translations) in
-        match pagination.next with
-        | PaginateRecordCmd recId ->
-           a [ class' (Style.arrowIcon Style.ArrowRight)
-             ; href (Router.routeToUrl (RecordRoute recId))
-             ; title label ] []
-        | PaginateNextCmd (page, recId) ->
-           a [ class' (Style.arrowIcon Style.ArrowRight)
-             ; loadBkgProp
-             ; onClick (RecordPaginate (page, (Navigate (recId, Forward))))
-             ; title label
-             ] []
-        | _ -> noNode)
-      ]
-  in
-  
+    (* Set a dummy attribute for background loading paginate links so that the vdom notices that they differ from normal paginate links... *)
+    let label = (Util.trans "Previous" context.translations) in
+
+    let el = match pagination.prev with
+    | PaginateRecordCmd recId ->
+       a [ class' (Style.arrowIcon Style.ArrowLeft)
+         ; href (Router.routeToUrl (RecordRoute recId))
+         ; title label ] []
+    | PaginatePrevCmd (page, recId) ->
+       a [ class' (Style.arrowIcon Style.ArrowLeft)
+         ; loadBkgProp
+         ; onClick (RecordPaginate (page, (Navigate (recId, Backward))))
+         ; title label ] []
+    | _j -> noNode
+    in
+    
+    let el = List.append [el] [(if resultCount > 0 then
+       p [ class' Style.paginateInfo]
+         [ text (Printf.sprintf "%d / %d" (pagination.ind+1) resultCount) ]
+     else
+       noNode)]
+    in
+
+    let label = (Util.trans "Next" context.translations) in
+
+    let el = List.append el [(match pagination.next with
+    | PaginateRecordCmd recId ->
+         a [ class' (Style.arrowIcon Style.ArrowRight)
+           ; href (Router.routeToUrl (RecordRoute recId))
+           ; title label ] []
+    | PaginateNextCmd (page, recId) ->
+       a [ class' (Style.arrowIcon Style.ArrowRight)
+         ; loadBkgProp
+         ; onClick (RecordPaginate (page, (Navigate (recId, Forward))))
+         ; title label
+         ] []
+    | _ -> noNode)]
+    in
+    
+    el
+    
+  in  
+    
   div [ class' Style.paginationContainer]
     [
-      div [] [
-          a [ class' Style.closeRecordIcon
-            ; onClick CloseRecord ] []
-        ]
-    ; (match pagination with
-       | None -> noNode
-       | Some pagination -> renderPagination pagination)
+      div []        
+        (List.append (match pagination with
+                      | None -> [noNode]
+                      | Some pagination -> renderPagination pagination)
+           [ a [ class' Style.closeRecordIcon
+               ; onClick CloseRecord ] [] ]
+        )
     ]
                      
 let viewRecord ~(r:Types.record) ~context =
