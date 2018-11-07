@@ -146,7 +146,6 @@ let resultsCallback ~inBkg ~searchParams =
     (PageLoaded (SearchRoute searchParams))
   
 let isPageLoading ~pageNum ~(resultPages:searchResultPageType Js.Dict.t) =
-  Js.log ("isloading", pageNum);
   match Js.Dict.get resultPages (string_of_int pageNum) with
   | Some page -> begin
       match page.results with
@@ -187,7 +186,9 @@ let update model context = function
          if newSearch then
            (initResults (), (resultsCallback ~inBkg:false ~searchParams:params))
          else
-           ( model.results, model.onResults )
+           let pages = model.results.pages in
+           Js.Dict.set pages (string_of_int page) nextResult;
+           ( { model.results with pages }, model.onResults )
        in
        let nextResult = LoadingType nextResult in
        let model =
@@ -204,7 +205,6 @@ let update model context = function
        match (model.nextResult) with
        | (LoadingType _) -> (model, Cmd.none, [NoUpdate])
        | _ ->
-          (* let nextResult = (LoadingType { page; results = Loading }) in *)
           let searchParams =
             { model.searchParams with page } in
           let (cmd, onResults) =
@@ -214,7 +214,7 @@ let update model context = function
             else
               ( Router.openUrl (Router.routeToUrl (SearchRoute searchParams)), cb)
           in
-          ( { model with searchParams; onResults }, cmd, [NoUpdate] )
+          ( { model with searchParams; onResults; }, cmd, [NoUpdate] )
      end
        
   | OnChange lookfor ->
@@ -235,8 +235,6 @@ let update model context = function
      ( { model with onResults }, Cmd.none, [updateResultInfo; model.onResults] )
   | GotResults (Error e) ->
      let result = Error (Http.string_of_error e) in
-     Js.log ("error", result);
-
      let model = appendResults ~model ~newResults: result in
      let onResults =
        resultsCallback ~inBkg:false ~searchParams:model.searchParams in
@@ -405,18 +403,18 @@ let renderResultPage
 
 let resultPage ~(page:searchResultPageType) ~model ~context =
     match (page.results, page.page) with
-      | (Error e, _) -> statusError e
-      | (Loading, _) ->
-         div [ class' (Style.nextPage ~loading:true) ]
-           [
-             p []
-               [ span [ class' Style.nextPageLabel ]
-                   [ text (Util.trans "Loading..." context.translations) ]
-               ; span [ class' (Style.spinnerIcon) ] []
-               ]
-           ]
-      | (Success res, pageNum) -> renderResultPage pageNum res model context
-      | _ -> Html.noNode
+    | (Error e, _) -> statusError e
+    | (Loading, _) ->
+       div [ class' (Style.nextPage ~loading:true) ]
+         [
+           p []
+             [ span [ class' Style.nextPageLabel ]
+                 [ text (Util.trans "Loading..." context.translations) ]
+             ; span [ class' (Style.spinnerIcon) ] []
+             ]
+         ]
+    | (Success res, pageNum) -> renderResultPage pageNum res model context
+    | _ -> Html.noNode
 
 
 let hasResults (results:Types.searchResultsType) =

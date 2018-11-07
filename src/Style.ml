@@ -66,7 +66,7 @@ let loadingIndicator ~show =
   in
   style (List.append base display)
 
-        
+          
 let spinnerIcon =
   (* let frames =
    *   keyframes [
