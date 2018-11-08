@@ -104,7 +104,8 @@ let update ~model ~lookfor ~filters = function
       List.iter (fun (key, _a) ->
           match (Js.Dict.get facets key) with
           | Some (facet) ->
-             (Js.Dict.set facets key { facet with items = NotAskedType [||] });
+             (Js.Dict.set facets key
+                { facet with count = None; items = NotAskedType [||] });
           | _ -> ()) closed;
 
       ( { model with lookfor; filters; facets },
