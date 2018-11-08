@@ -127,7 +127,12 @@ let update ~model ~lookfor ~filters = function
      ( model, Cmd.none)
   | GetFacets _-> (model, Cmd.none)
 
-let isFacetActive ~filters ~facetKey ~facetValue =
+let isFacetActive ~filters ~facetKey =
+  List.exists
+    (fun (key, _value) -> (facetKey = key))
+    filters
+                  
+let isFacetItemActive ~filters ~facetKey ~facetValue =
   List.exists
     (fun (key, value) -> (facetKey = key && facetValue = value))
     filters
@@ -142,7 +147,7 @@ let getFacetLabel ~key ~value ~type' ~translations =
 let facetList ~facets ~filters ~context =
   let renderFacetItem ~key ~type' ~(item:Types.facetItem) ~filters =
     let isActive =
-      isFacetActive ~filters ~facetKey:key ~facetValue:item.value
+      isFacetItemActive ~filters ~facetKey:key ~facetValue:item.value
     in
     let label = getFacetLabel
                   ~key
@@ -171,12 +176,13 @@ let facetList ~facets ~filters ~context =
         | (_, true) -> Style.arrowIcon Style.ArrowDown
         | (_, false) -> Style.arrowIcon Style.ArrowRight
       in
+      let active = isFacetActive ~facetKey:key ~filters in
       li [ class' (Style.facet ~opened ~loading)
          ; onClick (ToggleFacet key) ]
         [
           span [ class' icon ] []
         ; h2
-            [ class' Style.facetTitle ]
+            [ class' (Style.facetTitle ~active) ]
             [ text (Util.trans key context.translations) ]
         ; (if opened then
              ul [ class' Style.facetItemsContainer ]

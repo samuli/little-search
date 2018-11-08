@@ -171,10 +171,12 @@ let facetItemsContainer =
       marginLeft (em 1.0)
     ]
 
-let facetTitle =
+let facetTitle ~active =
   style [
       display `inlineBlock
     ; marginLeft (em 0.5)
+    ; fontWeight (if active then 700 else 500)
+    ; fontStyle (if active then `italic else `normal)
     ]
   
 let facetItem _active =
@@ -187,6 +189,7 @@ let facetLabel ~active =
   if active then
     style [
         fontWeight 700
+      ; fontStyle `italic
       ]
   else
     style []
