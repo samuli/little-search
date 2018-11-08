@@ -13,6 +13,7 @@ type msg =
   | GotResult of (string, string Http.error) Result.t
   | CloseRecord
   | SearchLinkClick of searchterm
+  | FacetLinkClick of searchParam
 [@@bs.deriving {accessors}]
 
 type model = {
@@ -91,8 +92,13 @@ let update ~model ~context = function
      (model, cmd, [NoUpdate] )
   | CloseRecord ->
      (model, Cmd.none, [BackToSearch] )
+
   | SearchLinkClick lookfor ->
-     ( model, Cmd.none, [NewSearch lookfor] )
+     ( model, Cmd.none, [NewSearch (Some lookfor, None)] )
+
+  | FacetLinkClick (key,value) ->
+     ( model, Cmd.none, [NewSearch (None, Some (key,value))] )
+
   | _ -> (model, Cmd.none, [NoUpdate] )
 
 let images recId imgs =
@@ -141,13 +147,19 @@ let getFormats formats =
   match formats with
   | Some formats when Array.length formats > 0 ->
      let format:Types.translated = formats.((Array.length formats)-1) in
-     Some format.translated
+     Some (format.value,format.translated)
   | _ -> None
-       
-let formats formats =
+
+let renderFormat ~value ~translated ~link =
+  span
+    [ class' Style.recordFormat
+    (* ; if (link = true) then onClick (FacetLinkClick ("format", value)) else noProp *)
+    ]
+    [ text translated ]
+
+let formats ~formats ~link =
   match getFormats formats with
-  | Some formats ->
-     span [ class' Style.recordFormat ] [ text formats ]
+  | Some (value,translated) -> renderFormat ~value ~translated ~link
   | None -> noNode
 
 let getBuildings buildings =
@@ -389,7 +401,7 @@ let viewRecord ~(r:Types.record) ~context =
         ; publishInfo r
         ; isbn r
         ; div [ class' Style.recordRow ] [
-              formats r.formats
+              formats ~formats:r.formats ~link:true
             ; buildings r.buildings
             ]
         ; urlList r

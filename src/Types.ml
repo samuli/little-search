@@ -152,7 +152,7 @@ type contextUpdate =
   | LoadResultsInBackground of resultpageNum
   | GotResultsInBackground
   | PageLoaded of route
-  | NewSearch of searchterm
+  | NewSearch of (searchterm option * searchParam option)
   | BackToSearch
 [@@bs.deriving {accessors}]
 

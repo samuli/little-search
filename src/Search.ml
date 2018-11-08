@@ -17,6 +17,7 @@ type msg =
   | OpenFacets
   | FacetMsg of Facet.msg
   | GotFacets of (string, string Http.error) Result.t
+  | IgnoreRecordMsg of Record.msg
 [@@bs.deriving {accessors}]
 
 
@@ -313,6 +314,8 @@ let update model context = function
 
   | GotFacets (Error _e) ->
      ( model, Cmd.none, [NoUpdate] )
+    
+  | _ -> (model, Cmd.none, [NoUpdate] )
 
 let renderResultItem ~(r:Types.record) ~visitedRecords =
   let lastVisited =
@@ -340,7 +343,7 @@ let renderResultItem ~(r:Types.record) ~visitedRecords =
         ; (match r.title with
            | Some title when title <> "" -> h1 [] [ text title ]
            | _ -> noNode)
-        ; Record.formats r.formats
+        ; Record.formats ~formats:r.formats ~link:false |> App.map ignoreRecordMsg
         ; Record.publishInfo r
         ; Record.buildings r.buildings
         ]

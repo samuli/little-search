@@ -81,7 +81,21 @@ let handlePageLoaded ~route ~model =
   in
   let route = pageToRoute model.nextPage in
   { model with route; nextPage = PageReady route }
-    
+
+let newSearch ~lookfor ~filters ~model ~context =
+  let searchParams =
+    { model.searchModel.searchParams with lookfor; filters }
+  in
+  let cmd = Cmd.map searchMsg (Cmd.msg (Search.onSearch)) in
+  let model = {
+      model with
+      searchModel = { model.searchModel with searchParams }
+    ; context = { context with prevRoute = None }
+    }
+  in
+  Util.resetPageScroll() |> ignore;
+  ( model, cmd )
+
 let handleOutMsg ~outMsg ~model =
   let context = model.context in
   
@@ -117,17 +131,15 @@ let handleOutMsg ~outMsg ~model =
      let route = (SearchRoute model.searchModel.searchParams) in
      let cmd = Router.openUrl (Router.routeToUrl route) in
      ( model, cmd)
-  | NewSearch lookfor ->
-     let searchParams = { model.searchModel.searchParams with lookfor } in
-     let cmd = Cmd.map searchMsg (Cmd.msg (Search.onSearch)) in
-     let model = {
-         model with
-         searchModel = { model.searchModel with searchParams }
-       ; context = { context with prevRoute = None }
-       }
-     in
-     Util.resetPageScroll() |> ignore;
-     ( model, cmd )
+     
+  | NewSearch (lookfor, filter) ->
+     (match (lookfor, filter) with
+     | (Some lookfor, _) ->
+        newSearch ~lookfor ~filters:[] ~model ~context
+     | (None, Some (filter,value)) ->
+        newSearch ~lookfor:"" ~filters:[(filter,value)] ~model ~context
+     | _ -> (model, Cmd.none))
+
   | NoUpdate -> (model, Cmd.none)
 
 let handleOutMsgs ~outMsgs ~model =
