@@ -158,7 +158,7 @@ let decodeFacetResults json : (string * facetItem array) remoteData =
     let key = List.hd keys in
     match (Js.Dict.get facets key) with
     | Some items -> Success (key, items)
-    | _ -> Error "Facet error2"
+    | _ -> Error "Facet error"
   in
   let process results =
     match results.status with

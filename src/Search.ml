@@ -102,12 +102,17 @@ let updateFacet ~facets ~key ~mode ~items =
      begin
        match facet.items with
        | NotAskedType _t | LoadingType _t | Success _t ->
-          let items = match mode with
-            | "loading" -> LoadingType items
-            | "success" -> Success items
-            | _ -> NotAskedType items
+          let (items,count) = match mode with
+            | "loading" -> (LoadingType items, None)
+            | "success" ->
+               let count =
+                 Array.fold_left
+                   (fun cnt (facet:Types.facetItem) -> cnt+facet.count) 0 items
+               in
+               (Success items, Some count)
+            | _ -> (NotAskedType items, None)
           in
-          let facet = { facet with items } in
+          let facet = { facet with items; count } in
           Js.Dict.set facets key facet;
           facets
        | _ -> facets

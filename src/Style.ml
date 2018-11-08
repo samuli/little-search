@@ -160,7 +160,6 @@ let facetHeading =
 let facets =
   style [
     backgroundColor greyLighter;
-    padding basePadding;
     borderBottom (px 1) solid greyLight
     ]
 
@@ -168,15 +167,28 @@ let facetMenu = style [ padding2 ~h: (px 0) ~v: (em 0.2) ]
 
 let facetItemsContainer =
   style [
-      marginLeft (em 1.0)
+      padding2 ~h:basePadding ~v:(px 0)
+    ; paddingLeft (em 1.5)
+    ; backgroundColor (hex "ffffb1")
     ]
 
+let facetTitleContainer =
+  style [
+      padding basePadding
+    ]
+  
 let facetTitle ~active =
   style [
       display `inlineBlock
     ; marginLeft (em 0.5)
     ; fontWeight (if active then 700 else 500)
     ; fontStyle (if active then `italic else `normal)
+    ]
+
+let facetTitleCount =
+  style [
+      position `absolute
+    ; right (em 0.5)
     ]
   
 let facetItem _active =
@@ -193,17 +205,18 @@ let facetLabel ~active =
       ]
   else
     style []
-  
-  (* match active with
-   *   | true -> style [ border (px 2) `solid red ]
-   *   | false -> style [] *)
 
+let facetItemLabelCount =
+  style [
+      position `absolute
+    ; right (em 0.5)
+    ]
+  
 let facet ~opened ~loading =
   let col = if opened = true then yellow else white in
 
   style [
       backgroundColor col
-    ; padding basePadding
     ; borderBottom (px 1) `solid black
     ; cursor `pointer
     ]
@@ -231,7 +244,7 @@ let recordList ~_visited =
 let recordListBkg ~visited ~lastVisited =
   (* let bkgColor = if visited then hex "eff8ff" else white in *)
   let borderCol = match (visited,lastVisited) with
-    | (_,true) -> blue
+    | (_,true) -> yellow
     | (true,_) -> hex "a7abc5"
     | _ -> white
   in

@@ -16,6 +16,7 @@ type facet = {
     items: Types.facetItem array remoteData;
     lookfor: string;
     opened: bool;
+    count: int option;
   } 
 
 type model = {
@@ -40,7 +41,8 @@ let initFacets lookfor =
           type';
           items = NotAskedType [||];
           lookfor;
-          opened = false
+          opened = false;
+          count = None;
         } in
       Js.Dict.set facets key facet
     ) keys;
@@ -155,22 +157,26 @@ let facetList ~facets ~filters ~context =
                   ~type'
                   ~translations:context.translations
     in
-    let label = Printf.sprintf "%s: (%s)" label (Util.toLocaleString item.count) in
-    li [
+     li [
         onClick (ToggleFacetItem ((not isActive), ( key, item.value )))
       ; class' (Style.facetItem isActive)
       ]
       [
         h3
           [ class' (Style.facetLabel ~active:isActive)]
-          [ text label ]
+          [
+            span [] [ text label ]
+          ; span
+              [ class' Style.facetItemLabelCount ]
+              [ text (Util.toLocaleString item.count) ]
+          ]
       ]
   in  
   let renderFacetItems  ~key ~type' ~items ~filters =
     Array.map (fun item -> renderFacetItem ~key ~type' ~item ~filters) items
   in
   let facet ~f ~context =
-    let renderFacet ~opened ~key ~items ~loading ~filters =      
+    let renderFacet ~opened ~key ~items ~loading ~filters ~count =      
       let icon = match (loading, opened) with
         | (true, _) -> Style.spinnerIcon
         | (_, true) -> Style.arrowIcon Style.ArrowDown
@@ -180,10 +186,20 @@ let facetList ~facets ~filters ~context =
       li [ class' (Style.facet ~opened ~loading)
          ; onClick (ToggleFacet key) ]
         [
-          span [ class' icon ] []
-        ; h2
-            [ class' (Style.facetTitle ~active) ]
-            [ text (Util.trans key context.translations) ]
+          div [ class' Style.facetTitleContainer ] [
+              span [ class' icon ] []
+            ; h2
+                [ class' (Style.facetTitle ~active) ]
+                [
+                  span [] [ text (Util.trans key context.translations) ]
+                 ;( match count with
+                    | Some count ->
+                       span
+                         [ class' Style.facetTitleCount ]
+                         [ text (Util.toLocaleString count) ]
+                    | None -> noNode)
+                ]
+            ]
         ; (if opened then
              ul [ class' Style.facetItemsContainer ]
                (Array.to_list
@@ -193,9 +209,9 @@ let facetList ~facets ~filters ~context =
         ]
     in
     match f.items with
-    | Success t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:false ~filters
-    | NotAskedType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:false ~filters
-    | LoadingType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:true ~filters
+    | Success t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:false ~filters ~count:f.count
+    | NotAskedType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:false ~filters ~count:f.count
+    | LoadingType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:true ~filters ~count:f.count
     | _ -> noNode
   in
   ul [ ]
