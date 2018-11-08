@@ -259,11 +259,11 @@ let recordListBkg ~visited ~lastVisited =
 
 let recordRowPadding = (em 0.5)
 let recordRow = style [ marginTop recordRowPadding ]
-          
+let recordFieldRow = style [ marginTop (em 1.0) ]
+
 let recordFormat =
   style [
     display `inlineBlock;
-    fontSize (em 1.0);
     padding2 ~v: (em 0.1) ~h: (em 0.5);
     backgroundColor greyLight;
     marginRight (em 0.5)
@@ -332,11 +332,35 @@ let recordAuthors =
     ; marginRight (em 0.5)
     ; marginTop recordRowPadding
     ]
+
+let recordFieldHeader =
+  style [
+      fontWeight 700 
+    ]
+  
+let recordFieldText =
+  style []
+
+let recordSearchLinksContainer =
+  style [
+      margin2 ~v: (em 1.0) ~h:(px 0)
+    ]
+
+let recordSearchLinkList =
+  style [
+      lineHeight (em 1.4)
+    ]
+  
+let recordSearchLink =
+  style [
+      cursor `pointer
+    ]
   
 let recordPublisher = style [ marginRight (em 0.3); fontSize (em 1.0) ]
+let recordIsbn = style [ marginRight (em 0.3); fontSize (em 1.0) ]
 let recordYear = style [ fontSize (em 1.0) ]
 let recordPublished = style [ marginRight (em 0.5) ]
-let recordSummary = style [ fontStyle `italic ]
+let recordSummary = style [ ]
 let recordFinnaLink =
   style [
       color blue

@@ -12,6 +12,7 @@ type msg =
   | LoadSearchResults of int
   | GotResult of (string, string Http.error) Result.t
   | CloseRecord
+  | SearchLinkClick of searchterm
 [@@bs.deriving {accessors}]
 
 type model = {
@@ -90,6 +91,8 @@ let update ~model ~context = function
      (model, cmd, [NoUpdate] )
   | CloseRecord ->
      (model, Cmd.none, [BackToSearch] )
+  | SearchLinkClick lookfor ->
+     ( model, Cmd.none, [NewSearch lookfor] )
   | _ -> (model, Cmd.none, [NoUpdate] )
 
 let images recId imgs =
@@ -133,6 +136,7 @@ let images recId imgs =
       ul [ class' Style.recordImages ] (Array.to_list images)
    | None -> noNode)
 
+
 let getFormats formats =
   match formats with
   | Some formats when Array.length formats > 0 ->
@@ -172,18 +176,66 @@ let authors authors =
   | None -> noNode
 
 let getPublishInfo (r:Types.record) =
-  match (r.publishers, r.year) with
-    | (Some publishers, Some year) when Array.length publishers > 0 ->
-       Some (Printf.sprintf "%s %s" publishers.(0) year)
-    | (Some publishers, None) when Array.length publishers > 0 ->
+  let publisher = match r.publishers with
+    | Some publishers when Array.length publishers > 0 ->
        Some publishers.(0)
-    | (None, Some year) -> Some year
     | _ -> None
+  in
+  let year = match r.publicationDates with
+    | Some dates when Array.length dates > 0 ->
+       Some dates.(0)
+    | _ -> None
+  in
+  match (publisher, year) with
+  | (Some pub, Some year) -> Some (Printf.sprintf "%s %s" pub year)
+  | (Some pub, _) -> Some pub
+  | (_, Some year) -> Some year
+  | _ -> None
 
 let publishInfo r =
   match getPublishInfo r with
   | Some info -> span [ class' Style.recordPublisher ] [ text info ]
   | _ -> noNode
+
+let recordField ~css ~field ~value =
+  p [ class' css ] [
+      span
+        [ class' Style.recordFieldHeader ]
+        [ text (Printf.sprintf "%s: " field) ]
+    ; span
+        [ class' Style.recordFieldText ]
+        [ text value ]
+    ]
+
+let maybeFirst arr =
+  match arr with
+  | Some arr when Array.length arr > 0 -> Some arr.(0)
+  | _ -> None
+
+let renderRecordRow value =
+  p [ class' Style.recordFieldRow ] [ text value ]
+  
+let recordRow value =
+  match value with
+  | Some value -> renderRecordRow value
+  | None -> noNode
+
+let recordRows value =
+  div [] 
+    (match value with
+    | Some value ->
+       List.map (fun r -> renderRecordRow r) (Array.to_list value)
+    | None -> [noNode])
+
+let isbn r =
+  let (field, num) = match (r.isbn, r.issn) with
+    | (Some isbn, _) -> ("ISBN", Some isbn)
+    | (_, Some issn) -> ("ISSN", Some issn)
+    | (_,_) -> ("", None)
+  in
+  match num with
+  | Some num -> recordField ~css:Style.recordIsbn ~field ~value:num
+  | None -> noNode
 
 let getSummary summary =
   match summary with
@@ -196,7 +248,8 @@ let summary summary =
   | Some summary ->
      p [ class' Style.recordSummary ] [ text summary ]
   | None -> noNode
-          
+
+
 let urlList (r:Types.record) =
   let urls =
     (match r.urls with
@@ -224,6 +277,28 @@ let urlList (r:Types.record) =
            | _ -> noNode) urls)
   else
     noNode
+
+let searchLink ~lookfor ~label ~exact =
+  let term =
+    if exact then
+      Printf.sprintf "\"%s\"" lookfor
+    else lookfor
+  in
+  a [ class' Style.recordSearchLink
+    ; onClick (SearchLinkClick term) ]
+    [ text label ]
+  
+let searchLinkList ~title ~list =
+  match list with
+  | Some items when Array.length items > 0 ->
+     div [ class' Style.recordSearchLinksContainer ] [
+         h3 [] [ text title ]
+       ; ul [ class' Style.recordSearchLinkList ]
+           ((Array.map (fun text ->
+                 let link = searchLink ~lookfor:text ~label:text ~exact:true in
+                 li [] [ link ]) items) |> Array.to_list)
+       ]
+  | _ -> noNode
   
 let finnaLink id context =
   p [ class' Style.recordFinnaLink ]
@@ -299,6 +374,10 @@ let recordNavigation ~(record:Types.record) ~(context:context) =
     ]
                      
 let viewRecord ~(r:Types.record) ~context =
+  let subjects = match r.subjects with
+    | Some subjects -> Some (Array.map (fun el -> el.(0)) subjects)
+    | _ -> None
+  in
   div [] [
       (recordNavigation ~record:r ~context)
     ; div [ class' Style.recordContent ] [
@@ -308,12 +387,20 @@ let viewRecord ~(r:Types.record) ~context =
         ; summary r.summary
         ; authors r.authors
         ; publishInfo r
+        ; isbn r
         ; div [ class' Style.recordRow ] [
               formats r.formats
             ; buildings r.buildings
             ]
-        ; images r.id r.images
         ; urlList r
+        ; recordRows r.measurements
+        ; images r.id r.images
+        ; searchLinkList
+            ~title:(Util.trans "Subjects" context.translations)
+            ~list:subjects
+        ; searchLinkList
+            ~title:(Util.trans "Genres" context.translations)
+            ~list:r.genres
         ; finnaLink r.id context
         ]
     ]

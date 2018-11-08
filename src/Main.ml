@@ -117,6 +117,17 @@ let handleOutMsg ~outMsg ~model =
      let route = (SearchRoute model.searchModel.searchParams) in
      let cmd = Router.openUrl (Router.routeToUrl route) in
      ( model, cmd)
+  | NewSearch lookfor ->
+     let searchParams = { model.searchModel.searchParams with lookfor } in
+     let cmd = Cmd.map searchMsg (Cmd.msg (Search.onSearch)) in
+     let model = {
+         model with
+         searchModel = { model.searchModel with searchParams }
+       ; context = { context with prevRoute = None }
+       }
+     in
+     Util.resetPageScroll() |> ignore;
+     ( model, cmd )
   | NoUpdate -> (model, Cmd.none)
 
 let handleOutMsgs ~outMsgs ~model =

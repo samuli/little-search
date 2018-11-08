@@ -22,7 +22,7 @@ let getRecordLink id =
   Printf.sprintf "https://finna.fi/Record/%s" id
      
 let getFieldQuery _fields =
-  let fields = ["id"; "title"; "formats"; "images"; "authors"; "buildings"; "publishers"; "year"; "urls"; "onlineUrls"; "summary"] in
+  let fields = ["id"; "title"; "formats"; "images"; "authors"; "buildings"; "publishers"; "cleanIsbn"; "cleanIssn"; "humanReadablePublicationDates"; "genres"; "subjects"; "year"; "urls"; "onlineUrls"; "summary"; "measurements"] in
   List.map (fun f -> "&field[]=" ^ f) fields |> String.concat ""
 
 let getFilterQuery filters =
@@ -80,7 +80,11 @@ let recordDecoder json =
     buildings = json |> (optional (field "buildings" (array translatedDecoder)));
     images = json |> (optional (field "images" (array string)));
     publishers = json |> (optional (field "publishers" (array string)));
+    isbn = json |> (optional (field "cleanIsbn" string));
+    issn = json |> (optional (field "cleanIssn" string));
     year = json |> (optional (field "year" string));
+    publicationDates = json |> (optional (field "humanReadablePublicationDates" (array string)));
+
     authors =
       json
       |> [%bs.raw
@@ -89,7 +93,10 @@ let recordDecoder json =
     onlineUrls = json |> (optional (field "onlineUrls" (array urlDecoder)));
     urls = json |> (optional (field "urls" (array urlDecoder)));
     summary = json |> (optional (field "summary" (array string)));
-    languages = json |> (optional (field "languages" (array string)));
+    measurements = json |> (optional (field "measurements" (array string)));
+    (* languages = json |> (optional (field "languages" (array string))); *)
+    genres = json |> (optional (field "genres" (array string)));
+    subjects = json |> (optional (field "subjects" (array (array string))));
   }
   
 let decodeSearchResults json : searchResult remoteData =

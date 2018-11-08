@@ -1,3 +1,4 @@
+type searchterm = string
 type recordId = string
 type resultpageNum = int
 type resultLimit = int
@@ -65,12 +66,18 @@ type record = {
   images: string array option;
   authors: string array option;
   buildings: translated array option;
+  isbn: string option;
+  issn: string option;
   publishers: string array option;
   year: string option;
+  publicationDates: string array option;
   onlineUrls: onlineUrl array option;
   urls: onlineUrl array option;
   summary: string array option;
-  languages: string array option;
+  measurements: string array option;
+  (* languages: string array option; *)
+  genres: string array option;
+  subjects: string array array option;
   }
 
 type searchResult = {
@@ -145,6 +152,7 @@ type contextUpdate =
   | LoadResultsInBackground of resultpageNum
   | GotResultsInBackground
   | PageLoaded of route
+  | NewSearch of searchterm
   | BackToSearch
 [@@bs.deriving {accessors}]
 

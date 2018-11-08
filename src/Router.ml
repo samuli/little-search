@@ -9,7 +9,9 @@ let urlToRoute location : Types.route =
                       match Js.String.split "=" param with
                       | [| key; value |] -> (key, value)
                       | _ -> (param, "")) params in
-     let (lookfor, filters, page, limit) = Util.extractSearchParams params in
+     let (lookfor, filters, page, limit) =
+       Util.extractSearchParams params
+     in
      
      SearchRoute {
          lookfor; filters;

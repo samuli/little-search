@@ -209,9 +209,12 @@ let facetList ~facets ~filters ~context =
         ]
     in
     match f.items with
-    | Success t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:false ~filters ~count:f.count
-    | NotAskedType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:false ~filters ~count:f.count
-    | LoadingType t -> renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:true ~filters ~count:f.count
+    | Success t ->
+       renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:false ~filters ~count:f.count
+    | NotAskedType t ->
+       renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:false ~filters ~count:f.count
+    | LoadingType t ->
+       renderFacet ~opened:f.opened ~key:f.key ~items:t ~loading:true ~filters ~count:f.count
     | _ -> noNode
   in
   ul [ ]
