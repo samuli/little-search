@@ -524,7 +524,7 @@ let searchField ~lookfor ~context ~disable =
       []
     ]
   
-let view model context =
+let view model context ~onMainPage =
   div
     [ ]
     [ div []
@@ -542,23 +542,30 @@ let view model context =
                      ~lookfor:model.searchParams.lookfor
                      ~context
                      ~disable:(isLoading ~model))
-                ; div [ class' Style.filterTools ]
-                    [
-                      (openFilters ~results:model.results ~context)
-                    ; (filters model.searchParams.filters context)
-                    ]
+                ; (if (not onMainPage) then
+
+                     div [ class' Style.filterTools ]
+                       [
+                         (openFilters ~results:model.results ~context)
+                       ; (filters model.searchParams.filters context)
+                       ]
+                   else
+                     noNode)
                 ]
             ]
         ]
-
-        ; div []
-            [
+    
+    ; (if (not onMainPage) then
+         div []
+           [
               results ~results:model.results ~model ~context
             ; (Facet.view
                  ~model: model.facetModel
                  ~context: context
                  ~filters:model.searchParams.filters |> App.map facetMsg)
-            ]
-    
+           ]
+       else
+         noNode)
+       
     ]
 

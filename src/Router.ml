@@ -2,6 +2,7 @@ open Types
    
 let urlToRoute location : Types.route =
   let route = Js.String.split "?" location.Web.Location.hash in
+  
   match route with
   | [| "#/Search/"; query |] ->
      let params = Js.String.split "&" query |> Array.to_list in
@@ -41,7 +42,7 @@ let routeToUrl = function
      Printf.sprintf "#/Search/?lookfor=%s&page=%d&limit=%d%s"
        lookfor page limit filters
   | RecordRoute recordId -> Printf.sprintf "#/Record/?%s" recordId
-  | _ -> "#"
+  | _ -> "/"
 
 let openUrl url = Tea.Navigation.newUrl url
 

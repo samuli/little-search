@@ -127,8 +127,14 @@ let handleOutMsg ~outMsg ~model =
      let cmd = Cmd.msg (Record.RecordPaginated) in
      (model, (Cmd.map recordMsg cmd) )
   | BackToSearch ->
-     Js.log "main::back to search";
-     let route = (SearchRoute model.searchModel.searchParams) in
+     let params = model.searchModel.searchParams in
+     let route =
+       if params.lookfor = "" && List.length params.filters = 0 then
+         MainRoute
+       else 
+         (SearchRoute model.searchModel.searchParams)
+     in
+     Js.log (Router.routeToUrl route);
      let cmd = Router.openUrl (Router.routeToUrl route) in
      ( model, cmd)
      
@@ -192,18 +198,21 @@ let update model = function
      
   | UrlChanged location ->
      let route = Router.urlToRoute location in
-     let (nextPage, cmd) =
+     let currentRoute = model.route in
+     let (nextPage, cmd, route) =
        begin match (route:Types.route) with
-       | MainRoute -> ((PageReady MainRoute), Cmd.none)
+       | MainRoute -> ((PageReady MainRoute), Cmd.none, route)
        | SearchRoute query ->
           ((PageLoading (SearchRoute query)),
-           Cmd.map searchMsg (Cmd.msg (Search.search query)))
+           Cmd.map searchMsg (Cmd.msg (Search.search query)),
+          currentRoute)
        | RecordRoute id ->
           ((PageLoading (RecordRoute id)),
-           Cmd.map recordMsg (Cmd.msg (Record.showRecord id)))
+           Cmd.map recordMsg (Cmd.msg (Record.showRecord id)),
+           currentRoute)
        end in
      let context = { model.context with prevRoute = Some model.route } in
-     ( { model with context; nextPage }, cmd )
+     ( { model with context; nextPage; route }, cmd )
 
 let languageMenu context =
   let item ~lng ~currentLng =
@@ -240,14 +249,18 @@ let view model =
             [ ]
             [ match model.route with
               | MainRoute ->
-                 div [] [ Search.view model.searchModel model.context
-                          |> map searchMsg ]
+                 Js.log "main::main";
+                                  
+                 div [] [
+                     Search.view model.searchModel model.context ~onMainPage:true
+                     |> map searchMsg ]
               | SearchRoute _query -> 
                  div [] [
-                     Search.view model.searchModel model.context
+                     Search.view model.searchModel model.context ~onMainPage:false
                      |> map searchMsg
                    ]
               | RecordRoute _recordId ->
+                 Js.log "main::rec";
                  Record.view
                    ~model:model.recordModel
                    ~context:model.context
