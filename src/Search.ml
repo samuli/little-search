@@ -367,9 +367,9 @@ let resultPageLoadNeighbor
          [
            p []
              [ span [ class' Style.nextPageLabel ]
-                 [ text (Printf.sprintf "%s %d"
+                 [ text (Printf.sprintf "%s %d / %d"
                            (Util.trans "Page" context.translations)
-                           (pageNum+1)) ]
+                           (pageNum+1) model.results.pageCount) ]
              ; span [ class' (Style.arrowIcon arrow) ] []
              ]
          ]
