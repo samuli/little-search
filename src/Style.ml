@@ -249,7 +249,7 @@ let recordFormat =
     display `inlineBlock;
     fontSize (em 1.0);
     padding2 ~v: (em 0.1) ~h: (em 0.5);
-    backgroundColor yellow;
+    backgroundColor greyLight;
     marginRight (em 0.5)
     ]
 
@@ -399,7 +399,6 @@ let filterTools =
 let filterContainer =
   style [
       float `left
-    ; marginTop (px 6)
     ]
 
 let filterType =
@@ -425,12 +424,8 @@ let removeFilterLabel =
 let openFacets ~active =
   style (List.append [
              float `left
-           ; backgroundColor (hex "fff700")
-           ; padding2 ~h:(px 16) ~v:(px 6)
            ; marginRight (em 1.0)
            ; marginBottom (em 0.5)
-           ; border (px 3) `solid (hex "b9c500")
-           ; borderRadius (em 0.2)
            ] (if active then
                 [ cursor `pointer ]
               else
@@ -442,7 +437,7 @@ let facetsIcon =
   style [
       height (px 40)
     ; color black
-    ; backgroundImage (url "/icons/sliders-h-solid.svg")
+    ; backgroundImage (url "/icons/cog-solid.svg")
     ; display `inlineBlock
     ; verticalAlign `middle
     ; backgroundRepeat `noRepeat
