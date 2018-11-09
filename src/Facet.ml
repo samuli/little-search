@@ -175,6 +175,13 @@ let facetList ~facets ~filters ~context =
       ]
   in  
   let renderFacetItems  ~key ~type' ~items ~filters =
+    if key = "building" then
+      Array.sort (
+          fun (a:Types.facetItem)
+              (b:Types.facetItem) ->
+          String.compare a.translated b.translated)
+        items;
+    
     Array.map (fun item -> renderFacetItem ~key ~type' ~item ~filters) items
   in
   let facet ~f ~context =
