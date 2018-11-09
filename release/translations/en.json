@@ -6,6 +6,7 @@
     "building": "Organization",
     "language": "Language",
     "topic_facet": "Topic",
+    "author_facet": "Author",
 
     "Loading...": "Loading",
     "Narrow search": "Narrow search",

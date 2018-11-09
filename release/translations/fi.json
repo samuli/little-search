@@ -6,6 +6,7 @@
     "building": "Organisaatio",
     "language": "Kieli",
     "topic_facet": "Aihe",
+    "author_facet": "Tekijä",
     
     "Loading...": "Odota hetki...",
     "Narrow search": "Rajaa hakua",

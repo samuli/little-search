@@ -32,7 +32,8 @@ let initFacets lookfor =
       (Types.FacetNormal, "format");
       (Types.FacetNormal, "building");
       (Types.FacetNormal, "language");
-      (Types.FacetNormal, "topic_facet")
+      (Types.FacetNormal, "topic_facet");
+      (Types.FacetNormal, "author_facet")
     ] in
   let facets = Js.Dict.empty() in
   List.iter (fun (type', key) ->
