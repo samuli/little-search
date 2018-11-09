@@ -507,65 +507,75 @@ let blurSearchfield () =
 
 let searchField ~lookfor ~context ~disable =
   div [] [
-    input'
-      [ id "search-field"
-    ; class' Style.searchBox
-    ; type' "search"
-    ; name "lookfor"
-    ; value lookfor
-    ; onInput (fun str -> (OnChange str))
-      ] []            
-  ; input'
-      [ type' "submit"
-      ; class' (Style.searchBoxSubmit ~active:(not disable))
-      ; Attributes.disabled disable
-      ; value (Util.trans "Search!" context.translations)
-      ]
-      []
+      div
+        [ class' (Style.searchBoxSubmit ~active:(not disable))
+        ; title (Util.trans "Search!" context.translations)
+        ; (if disable then noProp else onClick OnSearch)
+        ] []
+        
+      (* input'
+       *   [ type' "submit"
+       *   ; class' (Style.searchBoxSubmit ~active:(not disable))
+       *   ; Attributes.disabled disable
+       *   ; title (Util.trans "Search!" context.translations)
+       *   ]
+       *   [] *)
+        
+    ; div [ class' Style.searchBoxInputWrapper ] [
+          input'
+            [ id "search-field"
+            ; class' Style.searchBox
+            ; type' "search"
+            ; name "lookfor"
+            ; value lookfor
+            ; onInput (fun str -> (OnChange str))
+            ] []
+        ]
     ]
   
 let view model context ~onMainPage =
   div
     [ ]
-    [ div []
-        [
-          div [ class' Style.searchBoxWrapper  ]
-            [ form
-                [ onCB "submit" ""
-                    (fun ev ->
-                      ev##preventDefault ();
-                      let () = blurSearchfield () in
-                      Some(OnSearch))
-                ]
-                [
-                  (searchField
-                     ~lookfor:model.searchParams.lookfor
-                     ~context
-                     ~disable:(isLoading ~model))
-                ; (if (not onMainPage) then
-
-                     div [ class' Style.filterTools ]
-                       [
-                         (openFilters ~results:model.results ~context)
-                       ; (filters model.searchParams.filters context)
-                       ]
-                   else
-                     noNode)
-                ]
+    [ 
+      
+      div [ class' Style.searchBoxWrapper] [
+          form
+            [ onCB "submit" ""
+                (fun ev ->
+                  ev##preventDefault ();
+                  let () = blurSearchfield () in
+                  Some(OnSearch))
+            ]
+            [
+              (searchField
+                 ~lookfor:model.searchParams.lookfor
+                 ~context
+                 ~disable:(isLoading ~model))
             ]
         ]
     
     ; (if (not onMainPage) then
-         div []
+         
+         div [ class' Style.filterTools ]
            [
-              results ~results:model.results ~model ~context
-            ; (Facet.view
-                 ~model: model.facetModel
-                 ~context: context
-                 ~filters:model.searchParams.filters |> App.map facetMsg)
+             (openFilters ~results:model.results ~context)
+           ; (filters model.searchParams.filters context)
            ]
        else
          noNode)
-       
+    
+    
+    ; (if (not onMainPage) then
+         div []
+           [
+             results ~results:model.results ~model ~context
+           ; (Facet.view
+                ~model: model.facetModel
+                ~context: context
+                ~filters:model.searchParams.filters |> App.map facetMsg)
+           ]
+       else
+         noNode)
+    
     ]
 

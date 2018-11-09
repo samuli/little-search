@@ -78,7 +78,7 @@ let scrollToElement id =
        let _ = Web.Window.requestAnimationFrame (fun _ -> act id) in
        ()
     | Some _ ->
-       [%bs.raw "window.scrollTo(0, Math.max(0, document.getElementById(id).offsetTop)-40)" ]
+       [%bs.raw "window.scrollTo(0, Math.max(0, document.getElementById(id).offsetTop)-120)" ]
   in
   act id
     

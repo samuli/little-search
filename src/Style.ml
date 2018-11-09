@@ -4,7 +4,8 @@ let basePadding = em 1.0
 let textColor = darkgrey
 let greyLight = hex "dae1e7"
 let greyLighter = hex "f1f5f8"
-let btnBackground = hex "d6d6d6"
+let yellowLight = (hex "ffffb1")
+let btnBackground = yellowLight
 
 let init =
   global "body" [ margin (px 0) ];
@@ -31,10 +32,10 @@ let init =
   global 
     "input"
     [
-      boxSizing borderBox;
-      maxWidth (pct 100.0);
-      minWidth (pct 100.0);
-      width (pct 100.0);
+      (* boxSizing borderBox;
+       * maxWidth (pct 100.0);
+       * minWidth (pct 100.0);
+       * width (pct 100.0); *)
       padding (rem 0.5);
       fontSize (pct 100.0);
       borderRadius (em 0.2);
@@ -46,10 +47,11 @@ let init =
 let loadingIndicator ~show =
   let base =
     [
-        position `absolute;
-        backgroundColor yellow;
-        padding (px 3)
-      ]
+      position `absolute
+    ; backgroundColor (hex "29ff29")
+    ; padding (px 3)
+    ; zIndex 20
+    ]
   in
                  
   let display =
@@ -103,30 +105,49 @@ let statusStyle ~error =
 
 let info = statusStyle ~error: false 
 let error = statusStyle ~error: true
-         
+
+let searchBoxInputWrapper =
+  style [
+      overflow `hidden
+    ]
+
 let searchBox =
   style [
       fontSize (em 1.5)
+    ; height (em 2.5)
     ; backgroundColor white
     ; borderRadius (px 4)
+    ; width (pct 100.0)
     ]
 
 let searchBoxWrapper =
   style [
     padding basePadding
-    ; borderBottom (px 2) `solid black    
+    (* ; borderBottom (px 2) `solid black *)
+    ; position `sticky
+    ; top (px 0)
+    ; backgroundColor yellow
     ]
 
 let searchBoxSubmit ~active =
   style 
       (List.append
         [
-          border (px 2) `solid black
-        ; padding (em 0.8)
-        ; margin2 ~v:(em 1.0) ~h:(px 0)
+          (* border (px 2) `solid black *)
+        (* ; padding (em 0.8) *)
+        
+        float `right
+        ; marginLeft (em 0.5)
+        ; marginTop (em 0.4)
+        (* ; margin2 ~v:(em 1.0) ~h:(px 0) *)
         (* ; borderRadius (em 0.5) *)
         ; fontSize (em 1.3)
-        ; backgroundColor btnBackground
+        (* ; backgroundColor btnBackground *)
+        ; width (px 40)
+        ; height (px 40)
+        ; backgroundImage (url "/icons/search-solid.svg")
+        ; backgroundRepeat `noRepeat
+        
         ] (if active = true then 
              [ cursor `pointer ]
            else
@@ -149,7 +170,7 @@ let facetHeader =
       overflow `hidden
     ; padding2 ~v:(em 1.0) ~h:basePadding
     ; borderBottom (px 1) `solid (hex "d6d6d6")
-    ; backgroundColor greyLighter
+    ; backgroundColor yellow
     ]
 
 let facetHeading =
@@ -172,7 +193,7 @@ let facetItemsContainer =
   style [
       padding2 ~h:basePadding ~v:(px 0)
     ; paddingLeft (em 1.5)
-    ; backgroundColor (hex "ffffb1")
+    ; backgroundColor white
     ]
 
 let facetTitleContainer =
@@ -180,7 +201,7 @@ let facetTitleContainer =
       padding basePadding
     ; position `sticky
     ; top (px 0)
-    ; backgroundColor yellow
+    ; backgroundColor yellowLight
     ; zIndex 10
     ]
   
@@ -220,7 +241,7 @@ let facetItemLabelCount =
     ]
   
 let facet ~opened ~loading =
-  let col = if opened = true then yellow else white in
+  let col = if opened = true then yellowLight  else white in
 
   style [
       backgroundColor col
@@ -402,6 +423,7 @@ let paginationContainer =
     ; padding2 ~v:(em 0.5) ~h:basePadding
     ; borderBottom (px 1) `solid (hex "d6d6d6")
     ; padding2 ~h:(px 0) ~v:(em 0.5)
+    ; backgroundColor yellow
     ]
   
 let paginateInfo =
@@ -441,6 +463,9 @@ let closeRecordIcon = closeFacetsIcon
 let filterTools =
   style [
       overflow `hidden
+    ; padding2 ~h:basePadding ~v:(em 0.5) 
+    ; borderBottom (px 2) `solid black
+    ; backgroundColor yellowLight 
     ]
   
 let filterContainer =
