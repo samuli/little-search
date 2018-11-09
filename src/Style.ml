@@ -163,7 +163,10 @@ let facets =
     borderBottom (px 1) solid greyLight
     ]
 
-let facetMenu = style [ padding2 ~h: (px 0) ~v: (em 0.2) ]
+let facetMenu =
+  style [
+      padding2 ~h: (px 0) ~v: (em 0.2)
+    ]
 
 let facetItemsContainer =
   style [
@@ -175,6 +178,10 @@ let facetItemsContainer =
 let facetTitleContainer =
   style [
       padding basePadding
+    ; position `sticky
+    ; top (px 0)
+    ; backgroundColor yellow
+    ; zIndex 10
     ]
   
 let facetTitle ~active =
