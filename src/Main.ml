@@ -134,7 +134,6 @@ let handleOutMsg ~outMsg ~model =
        else 
          (SearchRoute model.searchModel.searchParams)
      in
-     Js.log (Router.routeToUrl route);
      let cmd = Router.openUrl (Router.routeToUrl route) in
      ( model, cmd)
      
@@ -249,8 +248,6 @@ let view model =
             [ ]
             [ match model.route with
               | MainRoute ->
-                 Js.log "main::main";
-                                  
                  div [] [
                      Search.view model.searchModel model.context ~onMainPage:true
                      |> map searchMsg ]
@@ -260,7 +257,7 @@ let view model =
                      |> map searchMsg
                    ]
               | RecordRoute _recordId ->
-                 Js.log "main::rec";
+
                  Record.view
                    ~model:model.recordModel
                    ~context:model.context

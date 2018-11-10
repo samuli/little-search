@@ -81,7 +81,7 @@ let spinnerIcon =
       cursor `pointer
     ; width (px 40)
     ; height (px 40)
-    ; backgroundImage (url "/icons/spinner-solid.svg")
+    ; backgroundImage (url "icons/spinner-solid.svg")
     ; display `inlineBlock
     ; verticalAlign `middle
     (* ; animation ~duration: 2000 ~timingFunction: `linear ~iterationCount: `infinite frames *)
@@ -145,7 +145,7 @@ let searchBoxSubmit ~active =
         (* ; backgroundColor btnBackground *)
         ; width (px 40)
         ; height (px 40)
-        ; backgroundImage (url "/icons/search-solid.svg")
+        ; backgroundImage (url "icons/search-solid.svg")
         ; backgroundRepeat `noRepeat
         
         ] (if active = true then 
@@ -330,7 +330,7 @@ let recordImageSpinner =
   style [
     width (px 40)
     ; height (px 40)
-    ; backgroundImage (url "/icons/spinner-solid.svg")
+    ; backgroundImage (url "icons/spinner-solid.svg")
     (* ; position `absolute *)
     ; marginLeft (`calc (`sub, (pct 50.0), (px 40)))
     ; marginBottom (`calc (`sub, (px 0), (px 55)))
@@ -442,7 +442,7 @@ let closeIcon =
     ; width (px 40)
     ; height (px 40)
     ; backgroundRepeat `noRepeat
-    ; backgroundImage (url "/icons/times-circle-regular.svg")
+    ; backgroundImage (url "icons/times-circle-regular.svg")
     ]
 
 let searchIcon =
@@ -451,7 +451,7 @@ let searchIcon =
     ; width (px 40)
     ; height (px 40)
     ; backgroundRepeat `noRepeat
-    ; backgroundImage (url "/icons/search-solid.svg")
+    ; backgroundImage (url "icons/search-solid.svg")
     ]
 
   
@@ -509,7 +509,7 @@ let facetsIcon =
   style [
       height (px 40)
     ; color black
-    ; backgroundImage (url "/icons/cog-solid.svg")
+    ; backgroundImage (url "icons/cog-solid.svg")
     ; display `inlineBlock
     ; verticalAlign `middle
     ; backgroundRepeat `noRepeat
@@ -535,7 +535,7 @@ let arrowIcon (dir:arrowDir) =
     | ArrowLeft -> "left"
   in
   let file =
-    "/icons/arrow-alt-circle-" ^ file ^ "-regular.svg"
+    "icons/arrow-alt-circle-" ^ file ^ "-regular.svg"
   in
   style [
 

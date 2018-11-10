@@ -35,7 +35,7 @@ let decodeTranslations json : (string Js.Dict.t) Types.remoteData =
   |> decode
 
 let loadTranslations lan callback =
-  let url = Printf.sprintf "/translations/%s.json" lan in
+  let url = Printf.sprintf "translations/%s.json" lan in
   let open Tea in
   Http.send callback (Http.getString url)
 
