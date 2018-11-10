@@ -330,18 +330,14 @@ let recordNavigation ~(record:Types.record) ~(context:context) =
   in
 
   let renderPagination pagination =
-    let loadBkgProp = (Vdom.prop "load-in-bkg" "1") in
-    (* Set a dummy attribute for background loading paginate links so that the vdom notices that they differ from normal paginate links... *)
     let label = (Util.trans "Previous" context.translations) in
-
     let el = match pagination.prev with
     | PaginateRecordCmd recId ->
-       a [ class' (Style.arrowIcon Style.ArrowLeft)
+       a [ class' (Style.paginateButton Style.ArrowLeft)
          ; href (Router.routeToUrl (RecordRoute recId))
          ; title label ] []
     | PaginatePrevCmd (page, recId) ->
-       a [ class' (Style.arrowIcon Style.ArrowLeft)
-         ; loadBkgProp
+       a [ class' (Style.paginateButton Style.ArrowLeft)
          ; onClick (RecordPaginate (page, (Navigate (recId, Backward))))
          ; title label ] []
     | _j -> noNode
@@ -358,12 +354,11 @@ let recordNavigation ~(record:Types.record) ~(context:context) =
 
     let el = List.append el [(match pagination.next with
     | PaginateRecordCmd recId ->
-         a [ class' (Style.arrowIcon Style.ArrowRight)
+         a [ class' (Style.paginateButton Style.ArrowRight)
            ; href (Router.routeToUrl (RecordRoute recId))
            ; title label ] []
     | PaginateNextCmd (page, recId) ->
-       a [ class' (Style.arrowIcon Style.ArrowRight)
-         ; loadBkgProp
+       a [ class' (Style.paginateButton Style.ArrowRight)
          ; onClick (RecordPaginate (page, (Navigate (recId, Forward))))
          ; title label
          ] []

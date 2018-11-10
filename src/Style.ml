@@ -437,7 +437,7 @@ let paginateInfo =
     ; verticalAlign `middle
     ; padding2 ~h:(em 0.5) ~v:(px 0)
     ]
-  
+
 let closeIcon =
   [
       cursor `pointer
@@ -547,6 +547,11 @@ let arrowIcon (dir:arrowDir) =
     ; display `inlineBlock
     ; verticalAlign `middle
     ]
+
+let paginateButton ~dir =
+  Printf.sprintf "%s %s" (style [ cursor `pointer ]) (arrowIcon dir)
+  
+  
 
 let nextPage ~loading =
   style (List.append
