@@ -219,7 +219,7 @@ let facetTitleCount =
     ; right (em 0.5)
     ]
   
-let facetItem _active =
+let facetItem =
   style [
       padding2 ~v:(em 1.0) ~h:(px 0)
     ; cursor `pointer
@@ -240,13 +240,15 @@ let facetItemLabelCount =
     ; right (em 0.5)
     ]
   
-let facet ~opened ~loading =
-  let col = if opened = true then yellowLight  else white in
-
+let facet ~opened ~loading ~hasFacets =
+  let disabled =
+    if opened && (not hasFacets) && (not loading) then true else false
+  in
   style [
-      backgroundColor col
+      backgroundColor (if opened = true then yellowLight else white)
     ; borderBottom (px 1) `solid black
-    ; cursor `pointer
+    ; cursor (if disabled then `default else `pointer)
+    ; opacity (if disabled then 0.5 else 1.0)
     ]
   
 let facetLink =

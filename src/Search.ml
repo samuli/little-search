@@ -16,7 +16,8 @@ type msg =
   | RemoveFilter of (string)
   | OpenFacets
   | FacetMsg of Facet.msg
-  | GotFacets of (string, string Http.error) Result.t
+  | GotFacets of (string * string)
+  | GotFacetsError of string
   | IgnoreRecordMsg of Record.msg
 [@@bs.deriving {accessors}]
 
@@ -276,7 +277,13 @@ let update model context = function
           let params = { model.searchParams with filters } in
           let lng = Types.finnaLanguageCode context.language in
           let url = Finna.getFacetSearchUrl ~facet ~params ~lng in
-          let cmd = getHttpCmd gotFacets url in
+          let cb = fun res ->
+            match res with
+            | (Tea.Result.Ok data) -> gotFacets (data, facet)
+            | (Tea.Result.Error _) -> gotFacetsError facet
+          in
+
+          let cmd = getHttpCmd cb url in
           let facets =
             updateFacet
               ~facets:model.facetModel.facets
@@ -294,7 +301,7 @@ let update model context = function
           ( {model with facetModel}, (Cmd.map facetMsg subCmd), [NoUpdate] )
      end
 
-  | GotFacets (Ok data) ->
+  | GotFacets (data, key) ->
      let translations = context.translations in
      let facets = match Finna.decodeFacetResults data with
        | Success (key, items) ->
@@ -304,15 +311,18 @@ let update model context = function
               items
           in
           Util.updateTranslations translations newTranslations;
-          updateFacet ~facets:model.facetModel.facets ~key ~mode:"success" ~items
-       | Error _e -> model.facetModel.facets
+          updateFacet
+            ~facets:model.facetModel.facets ~key ~mode:"success" ~items
+       | Error _e ->
+          updateFacet
+            ~facets:model.facetModel.facets ~key ~mode:"success" ~items:[||]
        | _ -> model.facetModel.facets
      in
      ( { model with facetModel = { model.facetModel with facets} },
        Cmd.none,
        [(UpdateTranslations translations)] )
 
-  | GotFacets (Error _e) ->
+  | GotFacetsError _facetKey ->
      ( model, Cmd.none, [NoUpdate] )
     
   | _ -> (model, Cmd.none, [NoUpdate] )

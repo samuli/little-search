@@ -161,7 +161,7 @@ let facetList ~facets ~filters ~context =
     in
      li [
         onClick (ToggleFacetItem ((not isActive), ( key, item.value )))
-      ; class' (Style.facetItem isActive)
+      ; class' (Style.facetItem)
       ]
       [
         h3
@@ -192,8 +192,15 @@ let facetList ~facets ~filters ~context =
         | (_, false) -> Style.arrowIcon Style.ArrowRight
       in
       let active = isFacetActive ~facetKey:key ~filters in
-      li [ class' (Style.facet ~opened ~loading)
-         ; onClick (ToggleFacet key) ]
+      let hasFacets = Array.length items > 0 in
+      let clickCb =
+        if opened && (not hasFacets) then
+          noProp
+        else
+          onClick (ToggleFacet key)
+      in
+      li [ class' (Style.facet ~opened ~loading ~hasFacets)
+         ; clickCb ]
         [
           div [ class' Style.facetTitleContainer ] [
               span [ class' icon ] []
