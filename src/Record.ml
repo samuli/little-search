@@ -31,11 +31,19 @@ let init =
 
 let update ~model ~context = function
   | ShowRecord id ->
-     let url =
-       Finna.getRecordUrl ~id ~lng:(Types.finnaLanguageCode context.language)
+     let (model, cmd) = match Util.getApiUrl context.settings with
+       | Some apiUrl ->
+          let url =
+            Finna.getRecordUrl
+              ~apiUrl
+              ~id
+              ~lng:(Types.finnaLanguageCode context.language)
+          in
+          let cmd =  Http.send gotResult (Http.getString url) in
+          ( { model with nextRecord = Loading }, cmd)
+       | _ -> (model, Cmd.none)
      in
-     let cmd =  Http.send gotResult (Http.getString url) in
-     ( { model with nextRecord = Loading }, cmd, [NoUpdate])
+     ( model, cmd, [NoUpdate] )
   | GotResult (Ok data) ->
      let record = Finna.decodeRecordResult data in
      let visited = match record with
@@ -313,12 +321,15 @@ let searchLinkList ~title ~list =
   | _ -> noNode
   
 let finnaLink id context =
-  p [ class' Style.recordFinnaLink ]
-    [ a
-        [ href (Finna.getRecordLink id)
-        ; class' Style.textLink ]
-        [ text (Util.trans "View in Finna" context.translations) ] ]
-
+  match Util.getSiteUrl context.settings with
+  | Some siteUrl ->
+     p [ class' Style.recordFinnaLink ]
+       [ a
+           [ href (Finna.getRecordLink ~siteUrl ~id)
+           ; class' Style.textLink ]
+           [ text (Util.trans "View in Finna" context.translations) ] ]
+  | _ -> noNode
+       
 let recordNavigation ~(record:Types.record) ~(context:context) =
   let resultCount = context.numOfResults in
   let pagination =

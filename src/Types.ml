@@ -124,6 +124,7 @@ type route =
   | RecordRoute of recordId
 
 type context = {
+    settings: string Js.Dict.t remoteData;
     language: language; 
     translations: string Js.Dict.t remoteData;
     visitedRecords: recordId array;

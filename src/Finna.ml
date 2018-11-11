@@ -18,8 +18,8 @@ type facetResult = {
 let baseUrl = "https://api.finna.fi"
 let apiUrl = baseUrl ^ "/api/v1"
 
-let getRecordLink id =
-  Printf.sprintf "https://finna.fi/Record/%s" id
+let getRecordLink ~siteUrl ~id =
+  Printf.sprintf "%s/Record/%s" siteUrl id
      
 let getFieldQuery ~details =
   let fields = ["id"; "title"; "formats"; "authors"; "buildings"; "publishers"; "humanReadablePublicationDates"; "year"; "urls"] in
@@ -35,16 +35,16 @@ let getFilterQuery filters =
   (List.map (fun (key,value) -> Printf.sprintf "filter[]=%s:%s" key value) filters)
   |> String.concat "&"
   
-let getSearchUrl ~params ~lng =
+let getSearchUrl ~apiUrl ~params ~lng =
   let fields = getFieldQuery ~details:false in
   let filters = getFilterQuery params.filters in
   Printf.sprintf "%s/search?lookfor=%s%s&limit=%d&page=%d&%s&lng=%s" apiUrl params.lookfor fields params.limit params.page filters lng
 
-let getFacetSearchUrl ~facet ~params ~lng =
+let getFacetSearchUrl ~apiUrl ~facet ~params ~lng =
   let filters = getFilterQuery params.filters in
   Printf.sprintf "%s/search?lookfor=%s&limit=0&page=%d&facet[]=%s&%s&lng=%s" apiUrl params.lookfor params.page facet filters lng
   
-let getRecordUrl ~id ~lng =
+let getRecordUrl ~apiUrl ~id ~lng =
   let id = Js_global.encodeURIComponent id in
   let fields = getFieldQuery ~details:true in
   Printf.sprintf "%s/record?id=%s%s&lng=%s" apiUrl id fields lng

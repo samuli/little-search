@@ -1,0 +1,6 @@
+{
+    "apiUrl": "https://api.finna.fi/api/v1",
+    "siteUrl": "https://finna.fi",
+
+    "defaultLanguage": "en"
+}

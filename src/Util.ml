@@ -1,3 +1,39 @@
+let loadSettings callback =
+  let open Tea in
+  Http.send callback (Http.getString "settings.json")
+
+let decodeSettings json : (string Js.Dict.t) Types.remoteData =
+  let decode json =
+    let open Json.Decode in
+    let settings = json |> (dict string) in
+    Types.Success settings
+  in
+
+  json
+  |> Json.parseOrRaise
+  |> decode
+
+let setting key settings =
+  match settings with
+  | Types.Success t ->
+     begin
+       match (Js.Dict.get t key) with
+       | Some txt -> Some txt
+       | _ -> None
+     end            
+  | _ -> None
+
+let getApiUrl settings =
+  setting "apiUrl" settings
+
+let getSiteUrl settings =
+  setting "siteUrl" settings
+
+let getDefaultLanguage settings =
+  match setting "defaultLanguage" settings with
+  | Some lng -> lng
+  | _ -> "en"
+
 let extractSearchParams params =
   let lookfor = match List.find (fun (key, _value) -> key = "lookfor") params with
   | (_, lookfor) -> Js_global.decodeURIComponent lookfor

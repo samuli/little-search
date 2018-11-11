@@ -32,10 +32,6 @@ let init =
   global 
     "input"
     [
-      (* boxSizing borderBox;
-       * maxWidth (pct 100.0);
-       * minWidth (pct 100.0);
-       * width (pct 100.0); *)
       padding (rem 0.5);
       fontSize (pct 100.0);
       borderRadius (em 0.2);
@@ -133,16 +129,10 @@ let searchBoxSubmit ~active =
   style 
       (List.append
         [
-          (* border (px 2) `solid black *)
-        (* ; padding (em 0.8) *)
-        
         float `right
         ; marginLeft (em 0.5)
         ; marginTop (em 0.4)
-        (* ; margin2 ~v:(em 1.0) ~h:(px 0) *)
-        (* ; borderRadius (em 0.5) *)
         ; fontSize (em 1.3)
-        (* ; backgroundColor btnBackground *)
         ; width (px 40)
         ; height (px 40)
         ; backgroundImage (url "icons/search-solid.svg")
@@ -153,7 +143,6 @@ let searchBoxSubmit ~active =
            else
              [] )
       )
-    
   
 let facetModal =
   style [
@@ -272,7 +261,6 @@ let recordList ~_visited =
     ]
 
 let recordListBkg ~visited ~lastVisited =
-  (* let bkgColor = if visited then hex "eff8ff" else white in *)
   let borderCol = match (visited,lastVisited) with
     | (_,true) -> yellow
     | (true,_) -> hex "a7abc5"
@@ -333,11 +321,9 @@ let recordImageSpinner =
     width (px 40)
     ; height (px 40)
     ; backgroundImage (url "icons/spinner-solid.svg")
-    (* ; position `absolute *)
     ; marginLeft (`calc (`sub, (pct 50.0), (px 40)))
     ; marginBottom (`calc (`sub, (px 0), (px 55)))
     ; paddingTop (px 20)
-    (* ; backgroundPosition `px 0 *)
     ; backgroundRepeat `noRepeat
     ; height (px 50)
     ]
@@ -482,7 +468,6 @@ let filterLabel = style []
                       
 let removeFilter =
   style [
-      (* display `inlineBlock *)
       cursor `pointer
     ]
 

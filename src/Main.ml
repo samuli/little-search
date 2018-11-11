@@ -1,5 +1,3 @@
-[%%debugger.chrome]
- 
 open Tea
 open App
 open Tea.Html
@@ -9,13 +7,15 @@ let _ = Style.init
  
 type msg =
   | ChangeLanguage of language
+  | GotSettings of (string, string Http.error) Result.t
   | GotTranslations of (string, string Http.error) Result.t
   | UrlChanged of Web.Location.location
   | SearchMsg of Search.msg
   | RecordMsg of Record.msg
 [@@bs.deriving {accessors}]
 
-type model = { 
+type model = {
+    location: Web.Location.location;
     route: route;
     nextPage: page;
     searchModel: Search.model;
@@ -25,6 +25,7 @@ type model = {
 
 let initContext ~language ~limit = {
     language;
+    settings = Loading;
     translations = Loading;
     prevRoute = None;
     pagination = { count = 0; items = []; limit; };
@@ -35,24 +36,21 @@ let initContext ~language ~limit = {
   }
   
 let init () location =
-  let language =
-    Util.fromStorage "language" (Types.languageCode LngFi)
-    |> Types.languageOfCode
-  in
-  let context = initContext ~language ~limit:0 in
+  let context =
+    initContext ~language:LngEn ~limit:0 in
   let route = Router.urlToRoute location in
-  let translationsCmd =
-    Util.loadTranslations
-      (Types.languageCode context.language) gotTranslations
+  let settingsCmd =
+    Util.loadSettings gotSettings
   in
-  let urlChangeCmd = Cmd.msg (urlChanged location) in
-  ({ route;
+  (* let urlChangeCmd = Cmd.msg (urlChanged location) in *)
+  ({ location;
+     route;
      searchModel = Search.init;
      recordModel = Record.init;     
-     nextPage = PageReady route;
+     nextPage = PageLoading route;
      context;
    }
-  , Cmd.batch [urlChangeCmd; translationsCmd] )
+  , settingsCmd )
  
 let subscriptions _model =
   Sub.none
@@ -155,11 +153,35 @@ let handleOutMsgs ~outMsgs ~model =
     (model, []) outMsgs
 
 let update model = function
+  | GotSettings (Ok data) ->
+     let settings = Util.decodeSettings data in
+     let defaultLanguage = Util.getDefaultLanguage settings in
+     let language =
+       Util.fromStorage "language" defaultLanguage
+       |> Types.languageOfCode
+     in
+
+     let context = { model.context with settings; language } in
+     
+     let translationsCmd =
+       Util.loadTranslations
+         (Types.languageCode language) gotTranslations
+     in
+     let urlChangedCmd = Cmd.msg (urlChanged model.location) in
+     ( { model with context }, Cmd.batch [translationsCmd; urlChangedCmd] )
+  | GotSettings (Error e) ->
+     let settings = Error (Http.string_of_error e) in
+     let context = { model.context with settings } in
+     ( { model with context }, Cmd.none )
+
   | ChangeLanguage language ->
      let cmd =
        Util.loadTranslations (Types.languageCode language) gotTranslations in
      let context = { model.context with language } in
+
+
      ( { model with context }, cmd)
+     
   | GotTranslations (Ok data) ->
      Util.toStorage "language" (Types.languageCode model.context.language);
      let translations = Util.decodeTranslations data in
@@ -232,40 +254,42 @@ let languageMenu context =
     ]
   
 let view model =
-  let pageLoading = match model.nextPage with
-    | PageLoading _route -> true
-    | PageReady _route -> false
-  in 
-  div []
-    [
-      div [
-          class' (Style.loadingIndicator ~show: pageLoading)
-        ] [ text (Util.trans "Loading..." model.context.translations) ]
-    ; div
-        [ ]
+  match model.context.settings with
+   | Error _e -> View.statusError "Could not load settings"
+   | _ ->
+      let pageLoading = match model.nextPage with
+        | PageLoading _route -> true
+        | PageReady _route -> false
+      in
+      div []
         [
-          p
+          div [
+              class' (Style.loadingIndicator ~show: pageLoading)
+            ] [ text (Util.trans "Loading..." model.context.translations) ]
+        ; div
             [ ]
-            [ match model.route with
-              | MainRoute ->
-                 div [] [
-                     Search.view model.searchModel model.context ~onMainPage:true
-                     |> map searchMsg ]
-              | SearchRoute _query -> 
-                 div [] [
-                     Search.view model.searchModel model.context ~onMainPage:false
-                     |> map searchMsg
-                   ]
-              | RecordRoute _recordId ->
-
-                 Record.view
-                   ~model:model.recordModel
-                   ~context:model.context
-                 |> map recordMsg
+            [
+              div
+                [ ]
+                [ match model.route with
+                  | MainRoute ->
+                     div [] [
+                         Search.view model.searchModel model.context ~onMainPage:true
+                         |> map searchMsg ]
+                  | SearchRoute _query -> 
+                     div [] [
+                         Search.view model.searchModel model.context ~onMainPage:false
+                         |> map searchMsg
+                       ]
+                  | RecordRoute _recordId ->
+                     Record.view
+                       ~model:model.recordModel
+                       ~context:model.context
+                     |> map recordMsg
+                ]
+            ; (languageMenu model.context)
             ]
-        ; (languageMenu model.context)
         ]
-    ]
 
 let main =
   Navigation.navigationProgram urlChanged {

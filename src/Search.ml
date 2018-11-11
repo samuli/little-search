@@ -1,5 +1,3 @@
-[%%debugger.chrome]
-
 open Types
 
 open View
@@ -63,11 +61,14 @@ let init =
 let getHttpCmd callback url =
   Http.send callback (Http.getString url)
                
-let getSearchCmd ~(params:Types.searchParams) ~lng =
-  let lng = Types.finnaLanguageCode lng in
-  let params = { params with page = params.page+1 } in
-  let url = Finna.getSearchUrl ~params ~lng in
-  getHttpCmd gotResults url
+let getSearchCmd ~settings ~(params:Types.searchParams) ~lng =
+  match Util.getApiUrl settings with
+  | Some apiUrl ->
+     let lng = Types.finnaLanguageCode lng in
+     let params = { params with page = params.page+1 } in
+     let url = Finna.getSearchUrl ~apiUrl ~params ~lng in
+     getHttpCmd gotResults url
+  | _ -> Cmd.none
   
 let appendResults ~model ~(newResults:Types.searchResult remoteData) =
   let page = match model.nextResult with
@@ -204,7 +205,11 @@ let update model context = function
                       onResults;
                       searchParams = params; }
        in
-       let cmd = getSearchCmd ~params ~lng:context.language in
+       let cmd = getSearchCmd
+                   ~settings:context.settings
+                   ~params
+                   ~lng:context.language
+       in
        ( model, cmd, [NoUpdate] )
        
   | SearchMore (page, searchInBkg) ->
@@ -269,30 +274,39 @@ let update model context = function
      begin
        match subMsg with
        | Facet.GetFacets facet ->
-          let filters =
-            List.filter (fun (key, _value)
-                         -> facet <> key)
-              model.searchParams.filters
-          in
-          let params = { model.searchParams with filters } in
-          let lng = Types.finnaLanguageCode context.language in
-          let url = Finna.getFacetSearchUrl ~facet ~params ~lng in
-          let cb = fun res ->
-            match res with
-            | (Tea.Result.Ok data) -> gotFacets (data, facet)
-            | (Tea.Result.Error _) -> gotFacetsError facet
-          in
+          let (model, cmd) = match Util.getApiUrl context.settings with
+            | Some apiUrl ->
+               let filters =
+                 List.filter (fun (key, _value)
+                              -> facet <> key)
+                   model.searchParams.filters
+               in
+               let params = { model.searchParams with filters } in
+               let lng = Types.finnaLanguageCode context.language in
 
-          let cmd = getHttpCmd cb url in
-          let facets =
-            updateFacet
-              ~facets:model.facetModel.facets
-              ~key:facet
+               let url =
+                 Finna.getFacetSearchUrl
+                   ~apiUrl ~facet ~params ~lng
+               in
+               let cb = fun res ->
+                 match res with
+                 | (Tea.Result.Ok data) -> gotFacets (data, facet)
+                 | (Tea.Result.Error _) -> gotFacetsError facet
+               in
+               
+               let cmd = getHttpCmd cb url in
+               let facets =
+                 updateFacet
+                   ~facets:model.facetModel.facets
+                   ~key:facet
               ~mode:"loading"
               ~items:[||]
+               in
+               ( { model with facetModel = { facetModel with facets} }, cmd )
+            | _ -> (model, Cmd.none)
           in
-          ( { model with facetModel = { facetModel with facets} },
-            cmd, [NoUpdate] )
+          ( model, cmd, [NoUpdate] )
+               
        | Facet.ToggleFacetItem (mode, (filterKey, filterVal)) ->
           let (cmd, model) = toggleFilter ~model ~filterKey ~filterVal ~mode in
           let model = { model with facetModel } in
