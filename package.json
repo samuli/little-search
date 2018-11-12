@@ -1,5 +1,5 @@
 {
-  "name": "Little search",
+  "name": "little-search",
   "version": "0.1.0",
   "scripts": {
     "clean": "bsb -clean",
@@ -7,7 +7,7 @@
     "build:bsb": "bsb -make-world",
     "build:js": "rollup -c",
     "serve": "serve release",
-    "build": "run-s build:bsb build:js",
+    "build": "run-s build:bsb build:js",    
     "watch:bsb": "bsb -make-world -w",
     "watch:js": "rollup -c -w",
     "watch": "run-p watch:bsb watch:js serve",
