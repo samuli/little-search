@@ -122,7 +122,7 @@ let updateFacet ~facets ~key ~mode ~items =
      end
   | _ -> facets
 
-let toggleFilter ~model ~filterKey ~filterVal ~mode =
+let toggleFilter ~context ~model ~filterKey ~filterVal ~mode =
   let filters = model.searchParams.filters in
   let filters = 
     if mode then
@@ -140,7 +140,9 @@ let toggleFilter ~model ~filterKey ~filterVal ~mode =
   let searchParams =
     { model.searchParams with filters = Array.to_list filters; page = 0 }
   in
-  let cmd = Router.openUrl (Router.routeToUrl (SearchRoute searchParams)) in
+  let cmd = Router.openUrl
+              ~appPath:context.appPath
+              ~url:(Router.routeToUrl (SearchRoute searchParams)) in
   let model = { model with searchParams;
                            lastSearch = None;
                            nextResult = Loading }
@@ -177,7 +179,9 @@ let update model context = function
          searchParams;
          onResults = (resultsCallback ~inBkg:false ~searchParams)
        },
-       Router.openUrl (Router.routeToUrl (SearchRoute searchParams)),
+       Router.openUrl
+         ~appPath:context.appPath
+         ~url:(Router.routeToUrl (SearchRoute searchParams)),
        [NoUpdate]
      )
   | Search params ->
@@ -224,7 +228,9 @@ let update model context = function
             if searchInBkg then
               (Cmd.msg (Search searchParams), cb)
             else
-              ( Router.openUrl (Router.routeToUrl (SearchRoute searchParams)), cb)
+              ( Router.openUrl
+                  ~appPath:context.appPath
+                  ~url:(Router.routeToUrl (SearchRoute searchParams)), cb)
           in
           ( { model with searchParams; onResults; }, cmd, [NoUpdate] )
      end
@@ -257,7 +263,7 @@ let update model context = function
 
   | RemoveFilter filterKey ->
      let (cmd, model) =
-       toggleFilter ~model ~filterKey ~filterVal:"" ~mode:false
+       toggleFilter ~context ~model ~filterKey ~filterVal:"" ~mode:false
      in
      (model, cmd, [NoUpdate])
   | FacetMsg subMsg ->
@@ -308,7 +314,9 @@ let update model context = function
           ( model, cmd, [NoUpdate] )
                
        | Facet.ToggleFacetItem (mode, (filterKey, filterVal)) ->
-          let (cmd, model) = toggleFilter ~model ~filterKey ~filterVal ~mode in
+          let (cmd, model) =
+            toggleFilter ~context ~model ~filterKey ~filterVal ~mode
+          in
           let model = { model with facetModel } in
           ( model, cmd, [NoUpdate] )
        | _ ->

@@ -42,10 +42,16 @@ let routeToUrl = function
      Printf.sprintf "#/Search/?lookfor=%s&page=%d&limit=%d%s"
        lookfor page limit filters
   | RecordRoute recordId -> Printf.sprintf "#/Record/?%s" recordId
-  | _ -> "/"
+  | _ -> "#/"
 
-let openUrl url = Tea.Navigation.newUrl url
+let openUrl ~url ~appPath =
+  let url =
+    if url != "/" then
+      Printf.sprintf "%s%s" appPath url
+    else url
+  in
+  Tea.Navigation.newUrl url
 
-let openRoute route =
-  openUrl (routeToUrl route)
+let openRoute ~route ~appPath =
+  openUrl ~url:(routeToUrl route) ~appPath
   

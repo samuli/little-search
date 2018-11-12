@@ -84,13 +84,16 @@ let update ~model ~context = function
             | Some pagination -> begin
                 if dir = Backward then
                   (match pagination.prev with
-                   | PaginateRecordCmd id -> Router.openRoute (RecordRoute id)
+                   | PaginateRecordCmd id ->
+                      Router.openRoute
+                        ~appPath:context.appPath ~route:(RecordRoute id)
                    | _ -> Cmd.none
                   )
                 else
                   (match pagination.next with
                    | PaginateRecordCmd id ->
-                      Router.openRoute (RecordRoute id)
+                      Router.openRoute
+                        ~appPath:context.appPath ~route:(RecordRoute id)
                    | _ -> Cmd.none
                   )
               end

@@ -124,6 +124,7 @@ type route =
   | RecordRoute of recordId
 
 type context = {
+    appPath: string;
     settings: string Js.Dict.t remoteData;
     language: language; 
     translations: string Js.Dict.t remoteData;

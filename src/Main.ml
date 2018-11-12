@@ -23,7 +23,8 @@ type model = {
     context: Types.context;
 }
 
-let initContext ~language ~limit = {
+let initContext ~language ~limit ~appPath = {
+    appPath;
     language;
     settings = Loading;
     translations = Loading;
@@ -36,8 +37,9 @@ let initContext ~language ~limit = {
   }
   
 let init () location =
+  let appPath = location.Web.Location.pathname in
   let context =
-    initContext ~language:LngEn ~limit:0 in
+    initContext ~language:LngEn ~limit:0 ~appPath in
   let route = Router.urlToRoute location in
   let settingsCmd =
     Util.loadSettings gotSettings
@@ -132,7 +134,11 @@ let handleOutMsg ~outMsg ~model =
        else 
          (SearchRoute model.searchModel.searchParams)
      in
-     let cmd = Router.openUrl (Router.routeToUrl route) in
+     let cmd =
+       Router.openUrl
+         ~url:(Router.routeToUrl route)
+         ~appPath:model.context.appPath
+     in
      ( model, cmd)
      
   | NewSearch (lookfor, filter) ->
