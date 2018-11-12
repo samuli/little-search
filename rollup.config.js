@@ -29,7 +29,6 @@ export default {
             'process.env.NODE_ENV': JSON.stringify( 'production' )
         }),
     ],
-//    external: ['inView'],
     watch: {
         clearScreen: false
     }
