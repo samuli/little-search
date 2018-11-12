@@ -533,7 +533,7 @@ let arrowIcon (dir:arrowDir) =
     ; verticalAlign `middle
     ]
 
-let paginateButton ~dir =
+let paginateButton dir =
   Printf.sprintf "%s %s" (style [ cursor `pointer ]) (arrowIcon dir)
   
   
