@@ -66,12 +66,12 @@ let loadingIndicator ~show =
 
           
 let spinnerIcon =
-  (* let frames =
-   *   keyframes [
-   *       (0, [ rotate (`deg 0) ] )
-   *     ; (100, [ rotate (`deg 360) ] )
-   *     ]
-   * in *)
+  let frames =
+    keyframes [
+        (0, [ transform (rotate (`deg 0)) ] )
+      ; (100, [ transform (rotate (`deg 360)) ] )
+      ]
+  in
         
   style [
       cursor `pointer
@@ -80,7 +80,7 @@ let spinnerIcon =
     ; backgroundImage (url "icons/spinner-solid.svg")
     ; display `inlineBlock
     ; verticalAlign `middle
-    (* ; animation ~duration: 2000 ~timingFunction: `linear ~iterationCount: `infinite frames *)
+    ; animation ~duration: 2000 ~timingFunction: `linear ~iterationCount: `infinite frames
     ]
   
 let pageYScroll ~allow =
