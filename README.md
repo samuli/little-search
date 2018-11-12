@@ -5,7 +5,7 @@ Implemented as a single-page js-app using [Bucklescript-tea](https://github.com/
 Search API url is defined in settings.json and defaults to [api.finna.fi](https://api.finna.fi/)
 
 ## Demo
-[https://github.com/samuli/little-search](https://github.com/samuli/little-search)
+[http://samuli.github.io/little-search/](http://samuli.github.io/little-search/)
 
 ## Install
 
