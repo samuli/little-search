@@ -248,7 +248,11 @@ let facetLink =
     ; backgroundColor greyLight
     ]
 
-let searchResults = style []
+let searchResults =
+  style [
+    (*   lineHeight (px 0)
+     * ; columnCount (`count 3) *)
+    ]
 let searchResultsInfo = style [ padding basePadding; fontWeight 800 ]
 
 let container = style []
@@ -310,10 +314,17 @@ let recordLink =
         ; textOverflow `ellipsis
     ]
 
-let recordImages = style [ marginTop (em 1.0) ]
+let recordImages columns =
+  style [
+      marginTop (em 1.0)
+    ; lineHeight (px 0) 
+    ; columnCount (`count columns)
+    ; gridColumnGap (px 0)
+    ]
 
 let recordImageContainer =
   style [
+    border (px 1) `solid white
     ]
 
 let recordImageSpinner =
@@ -334,6 +345,7 @@ let recordImage ~loading =
         [
           width (pct 100.0)
         ; minHeight (px 200)
+        (* ; border (px 2) `solid white  *)
         ]        
         (if loading = true then
            [ border (px 1) `solid greyLight ]
@@ -444,6 +456,33 @@ let searchIcon =
     ; backgroundImage (url "icons/search-solid.svg")
     ]
 
+let recordImageGridUi =
+  style [
+      float `right
+    ; marginRight (em 2.0)
+    ]
+
+let zoomOutIcon =
+  style [
+      cursor `pointer
+    ; width (px 40)
+    ; height (px 40)
+    ; backgroundRepeat `noRepeat
+    ; backgroundImage (url "icons/search-minus-solid.svg")
+    ; display `inlineBlock
+    ]
+
+let zoomInIcon =
+  style [
+      cursor `pointer
+    ; width (px 40)
+    ; height (px 40)
+    ; backgroundRepeat `noRepeat
+    ; backgroundImage (url "icons/search-plus-solid.svg")
+    ; display `inlineBlock
+    ; marginRight (em 1.0)
+    ] 
+
   
 let closeFacetsIcon =
   style (List.append closeIcon [float `right])
@@ -512,7 +551,7 @@ let facetsIconLabel =
     ; marginTop (px 8)
     ; verticalAlign `middle
     ]
-
+ 
 type arrowDir =
   | ArrowUp | ArrowRight | ArrowDown | ArrowLeft
                       

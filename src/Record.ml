@@ -5,6 +5,8 @@ open Tea.Html
 
 
 type msg =
+  | AddColumn
+  | RemoveColumn
   | ShowRecord of string
   | RecordPaginate of (resultpageNum * navigateCmd)
   | RecordPaginated
@@ -17,6 +19,7 @@ type msg =
 [@@bs.deriving {accessors}]
 
 type model = {
+    gridColumns: int;
     record: Types.record remoteData;
     nextRecord: Types.record remoteData;
     navigateCmd: navigateCmd;
@@ -24,12 +27,18 @@ type model = {
 
 let init =
   {
+    gridColumns = 3;
     record = NotAsked;
     nextRecord = NotAsked;
     navigateCmd = NoNavigate;
   }
 
 let update ~model ~context = function
+  | AddColumn ->
+     ( { model with gridColumns = model.gridColumns+1 }, Cmd.none, [NoUpdate] )
+  | RemoveColumn ->
+     let gridColumns = max 0 (model.gridColumns-1) in
+     ( { model with gridColumns }, Cmd.none, [NoUpdate] )
   | ShowRecord id ->
      let (model, cmd) = match Util.getApiUrl context.settings with
        | Some apiUrl ->
@@ -112,7 +121,7 @@ let update ~model ~context = function
 
   | _ -> (model, Cmd.none, [NoUpdate] )
 
-let images recId imgs =
+let images recId imgs ~columns =
   (match imgs with
    | Some images when (Array.length images) = 0 -> noNode
    | Some images ->
@@ -149,8 +158,26 @@ let images recId imgs =
       let ids = Array.mapi (fun i _ -> imgId i) images in
       Js.Global.setTimeout (fun () ->
           View.registerInview (Array.to_list ids)) 100 |> ignore;
+
+      (* let rec divide limit pages page items =
+       *   match items with
+       *   | [] -> List.append pages page
+       *   | hd :: tl ->
+       *      let cnt = List.length page in
+       *      if cnt = limit then
+       *        let pages = List.append pages page in
+       *        let page = [hd] in
+       *        divide limit pages page tl
+       *      else
+       *        let page = List.append page [hd] in
+       *        divide limit pages page tl
+       * in
+       * 
+       * let pages = divide 10 [] [] (Array.to_list images) in
+       * Js.log ("pages", (Array.of_list pages).(0)); *)
       
-      ul [ class' Style.recordImages ] (Array.to_list images)
+      ul [ class' (Style.recordImages columns) ]
+             (Array.to_list images)
    | None -> noNode)
 
 
@@ -333,7 +360,7 @@ let finnaLink id context =
            [ text (Util.trans "View in Finna" context.translations) ] ]
   | _ -> noNode
        
-let recordNavigation ~(record:Types.record) ~(context:context) =
+let recordNavigation ~(record:Types.record) ~(context:context) ~columns =
   let resultCount = context.numOfResults in
   let pagination =
     Pagination.paginateRecord
@@ -389,18 +416,29 @@ let recordNavigation ~(record:Types.record) ~(context:context) =
         (List.append (match pagination with
                       | None -> [noNode]
                       | Some pagination -> renderPagination pagination)
-           [ a [ class' Style.closeRecordIcon
-               ; onClick CloseRecord ] [] ]
+           [ div []
+               [
+               a [ class' Style.closeRecordIcon
+                 ; onClick CloseRecord ] []
+
+               ; div [ class' Style.recordImageGridUi] [
+                     div [ class' Style.zoomInIcon
+                         ; onClick RemoveColumn ] []
+                   ; div [ class' Style.zoomOutIcon
+                         ; onClick AddColumn ] []
+                   ]
+               ]
+           ]
         )
     ]
                      
-let viewRecord ~(r:Types.record) ~context =
+let viewRecord ~(r:Types.record) ~context ~model =
   let subjects = match r.subjects with
     | Some subjects -> Some (Array.map (fun el -> el.(0)) subjects)
     | _ -> None
   in
   div [] [
-      (recordNavigation ~record:r ~context)
+      (recordNavigation ~record:r ~context ~columns:model.gridColumns)
     ; div [ class' Style.recordContent ] [
           (match r.title with
            | Some title when title <> "" -> h1 [] [ text title ]
@@ -415,7 +453,7 @@ let viewRecord ~(r:Types.record) ~context =
             ]
         ; urlList r
         ; recordRows r.measurements
-        ; images r.id r.images
+        ; images r.id r.images ~columns:model.gridColumns
         ; searchLinkList
             ~title:(Util.trans "Subjects" context.translations)
             ~list:subjects
@@ -433,6 +471,6 @@ let view ~model ~context =
       (match model.record with
        | Loading -> statusLoading ~context
        | Error e -> statusError e
-       | Success r -> viewRecord ~r ~context
+       | Success r -> viewRecord ~r ~context ~model
        | _ -> Html.noNode)
     ] 
