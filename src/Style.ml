@@ -408,6 +408,8 @@ let language ~active =
 let paginationContainer =
   style [
       overflow `hidden
+    ; position `sticky
+    ; top (px 0)
     ; padding2 ~v:(em 0.5) ~h:basePadding
     ; borderBottom (px 1) `solid (hex "d6d6d6")
     ; padding2 ~h:(px 0) ~v:(em 0.5)
