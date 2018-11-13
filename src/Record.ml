@@ -412,24 +412,23 @@ let recordNavigation ~(record:Types.record) ~(context:context) ~columns =
     
   div [ class' Style.paginationContainer]
     [
-      div []        
-        (List.append (match pagination with
+      div [ class' Style.paginateUiLeft ]        
+        (match pagination with
                       | None -> [noNode]
                       | Some pagination -> renderPagination pagination)
-           [ div []
-               [
-               a [ class' Style.closeRecordIcon
-                 ; onClick CloseRecord ] []
-
-               ; div [ class' Style.recordImageGridUi] [
-                     div [ class' Style.zoomInIcon
-                         ; onClick RemoveColumn ] []
-                   ; div [ class' Style.zoomOutIcon
-                         ; onClick AddColumn ] []
-                   ]
-               ]
-           ]
-        )
+        
+    ; div [ class' Style.paginateUiRight ]
+        [
+          a [ class' Style.closeRecordIcon
+            ; onClick CloseRecord ] []
+        
+        ; div [ class' Style.recordImageGridUi] [
+              div [ class' Style.zoomInIcon
+                  ; onClick RemoveColumn ] []
+            ; div [ class' Style.zoomOutIcon
+                  ; onClick AddColumn ] []
+            ]
+        ]
     ]
                      
 let viewRecord ~(r:Types.record) ~context ~model =

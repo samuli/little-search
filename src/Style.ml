@@ -456,10 +456,21 @@ let searchIcon =
     ; backgroundImage (url "icons/search-solid.svg")
     ]
 
+let paginateUiLeft =
+  style [
+      float `left
+    ]
+
+let paginateUiRight =
+  style [
+      float `right
+    ]
+  
 let recordImageGridUi =
   style [
       float `right
     ; marginRight (em 2.0)
+    ; 
     ]
 
 let zoomOutIcon =
