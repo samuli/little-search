@@ -37,7 +37,7 @@ let update ~model ~context = function
   | AddColumn ->
      ( { model with gridColumns = model.gridColumns+1 }, Cmd.none, [NoUpdate] )
   | RemoveColumn ->
-     let gridColumns = max 0 (model.gridColumns-1) in
+     let gridColumns = max 1 (model.gridColumns-1) in
      ( { model with gridColumns }, Cmd.none, [NoUpdate] )
   | ShowRecord id ->
      let (model, cmd) = match Util.getApiUrl context.settings with
@@ -126,9 +126,10 @@ let images recId imgs ~columns =
    | Some images when (Array.length images) = 0 -> noNode
    | Some images ->
       let item i path imgId =
+        let height = int_of_float(floor (250.0 /. (float_of_int columns))) in
         let path = Finna.baseUrl ^ path in
         let attrs =
-          [ id imgId; class' (Style.recordImage ~loading:true)
+          [ id imgId; class' (Style.recordImage ~loading:true ~height)
             ; (onCB "load" "" (fun e ->
                    (match Js.Undefined.toOption e##target with
                     | Some target -> target##setAttribute "class" "loaded";
@@ -159,25 +160,29 @@ let images recId imgs ~columns =
       Js.Global.setTimeout (fun () ->
           View.registerInview (Array.to_list ids)) 100 |> ignore;
 
-      (* let rec divide limit pages page items =
-       *   match items with
-       *   | [] -> List.append pages page
-       *   | hd :: tl ->
-       *      let cnt = List.length page in
-       *      if cnt = limit then
-       *        let pages = List.append pages page in
-       *        let page = [hd] in
-       *        divide limit pages page tl
-       *      else
-       *        let page = List.append page [hd] in
-       *        divide limit pages page tl
-       * in
-       * 
-       * let pages = divide 10 [] [] (Array.to_list images) in
-       * Js.log ("pages", (Array.of_list pages).(0)); *)
+      let rec divide limit pages page items =
+        match items with
+        | [] -> List.append pages [page]
+        | hd :: tl ->
+           let cnt = List.length page in
+           if cnt = limit then
+             let pages = List.append pages [page] in
+             let page = [hd] in
+             divide limit pages page tl
+           else
+             let page = List.append page [hd] in
+             divide limit pages page tl
+      in
+
+      let setCnt = columns*10 in
+      let pages = divide setCnt [] [] (Array.to_list images) in
+
+      div [] 
+          (List.map (fun p ->
+               ul [ class' (Style.recordImages columns) ] p )
+             pages)
+        
       
-      ul [ class' (Style.recordImages columns) ]
-             (Array.to_list images)
    | None -> noNode)
 
 

@@ -1,5 +1,5 @@
 open Css
-   
+    
 let basePadding = em 1.0
 let textColor = darkgrey
 let greyLight = hex "dae1e7"
@@ -339,12 +339,12 @@ let recordImageSpinner =
     ; height (px 50)
     ]
   
-let recordImage ~loading =
+let recordImage ~loading ~height =
   style (
       List.append
         [
           width (pct 100.0)
-        ; minHeight (px 200)
+        ; minHeight (px height)
         (* ; border (px 2) `solid white  *)
         ]        
         (if loading = true then
